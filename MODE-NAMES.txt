@@ -1,0 +1,114 @@
+SCAM WHEEL - WORKING NAMES
+Names can be edited in Settings. New concepts remain out of normal play.
+
+ID 0 | Money Orchard
+Original: Dollar Tree
+Grow five different $11 trees. After that, find a $1 exit.
+
+ID 1 | Tip Jar Takeover
+Original: Cash Boost
+Add the cash boost to every cash prize. Bonus spins stay.
+
+ID 2 | Seeing Double
+Original: Double Ticker
+Both pointers pay. Extra spins use the larger award. Each special can hit twice.
+
+ID 3 | Price Tag Party
+Original: Cash Set
+Every cash prize becomes the configured flat amount.
+
+ID 4 | Main Character Energy
+Original: Increased 2X Probability
+The multiplier grows to 35% of the wheel.
+
+ID 5 | Spin Me Baby
+Original: Increased 2 Spins Probability
+The +2 spins space grows to 30% of the wheel.
+
+ID 6 | Clingy Wheel
+Original: Increased Bonus Spins
+Four more cash spaces gain a bonus spin.
+
+ID 8 | High Roller Hotline
+Original: Russian Roulette
+Two $100 spaces cover 40% of the wheel. All other spaces pay $20.
+
+ID 9 | Just One More
+Original: Mega Spin Bonus
+Add two spins to the current balance.
+
+ID 10 | Extra Extra
+Original: Expanding Bonus Spins
+The two cash-plus-spin spaces each grow to 40%.
+
+ID 11 | Multiplier Muse
+Original: Mega Multiplier
+One spin on a multiplier-only wheel. Factors add to the bank.
+
+ID 12 | Fatal Attraction
+Original: The 2X Magnet
+The tiny multiplier is guaranteed on the first spin. Then the base wheel returns.
+
+ID 13 | Third Wheel
+Original: Right in the Middle
+Collect three spaces. Neighbor bonus spins only count on the first spin; multiplier windows can hit twice.
+
+ID 14 | Sweet Little Lie
+Original: Mega Death / Angel Numbers
+The scary jackpot board is a fake-out. The real wheel pays angel numbers.
+
+ID 15 | Split Personality
+Original: Cell Division
+Two independent wheels pay together. Multiplier spaces do not return a spin.
+
+ID 16 | Lights Out, Babe
+Original: Power Outage
+Eight spaces burn out. The four lit spaces have equal chances.
+
+ID 17 | Grabby Hands
+Original: The Mean Ticker
+Two extra hands collect prizes. The hands can take only one special per round.
+
+ID 18 | Color Me Expensive
+Original: Rainbow Ride
+A1Z26 letter values in each color name become the cash prize.
+
+ID 19 | Double Dare, Darling
+Original: Double Trouble
+Cash doubles, multiplier becomes x4, and +4 spins can hit once.
+
+ID 20 | Vault After Dark
+Original: Bank Heist
+Six laser spaces pay $15 and return a spin. The other six keep their prizes.
+
+ID 21 | Lucky-ish
+Original: All or Nothing
+Scripted gag: the $777 space is decorative. A $7 landing turns into a $77 award.
+
+ID 22 | Rush Hour Crush
+Original: 15 Second Dash
+Spin manually against the clock. The + and - controls queue seconds.
+
+ID 23 | Bubble Trouble
+Original: Force Fields
+Three shields pay cash-only hits and bounce into a free replacement spin.
+
+ID 24 | Pick Your Poison
+Original: Mystery Picks
+Choose six shuffled prizes, reveal them, then spin the same revealed board once.
+
+ID 25 | Heartbreak Escape
+Original: Key Escape
+Keep going until three keys unlock the wheel. Every key pays $5.
+
+ID 26 | Prize Pinball
+NEW IDEA - awaiting Faith approval
+A spin picks three different cash bumpers. Collect all three, then finish.
+
+ID 27 | Combo Queen
+NEW IDEA - awaiting Faith approval
+Three cash-only spins pay x1, x2, then x3. Every spin builds the combo; repeat hits never reset it.
+
+ID 28 | Encore or Exit
+NEW IDEA - awaiting Faith approval
+One spin pays cash. Choose to bank it or take up to two more spins; each encore also adds a 50% bonus to that spin.

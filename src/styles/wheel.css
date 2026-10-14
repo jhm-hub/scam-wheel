@@ -1,0 +1,250 @@
+.wheel-container {
+  /* Base coordinate box: a 500px disc plus 96px of headroom for the title and pointer. The
+     whole widget is transform-scaled by --fit-scale (computed from the host box) and
+     centered, so any layer size works, with dead space where the aspect ratio differs.
+     --stage-left shifts the centre past a side panel (the playground); 0 in StreamElements
+     and OBS. */
+  --disc: 500px;
+  --hr: 96px;
+  position: absolute;
+  left: calc(50% + var(--stage-left, 0px) / 2);
+  top: 50%;
+  width: var(--disc);
+  height: calc(var(--disc) + var(--hr));
+  /* --fit-scale fits the box to the host; --user-scale is the streamer's scale slider, kept
+     separate so the playground can update it live without recomputing the fit. */
+  transform: translate(-50%, -50%) scale(calc(var(--fit-scale, 1) * var(--user-scale, 1)));
+  transform-origin: center center;
+  font-family: var(--wheel-font, "Nunito"), "Segoe UI", system-ui, sans-serif;
+}
+/* Non-rotating wrapper: any clip (e.g. halfwheel) goes here, never on .wheel itself,
+   or the clip would spin with the disc. */
+.wheel-clip {
+  position: absolute;
+  left: 0;
+  top: var(--hr);
+  width: var(--disc);
+  height: var(--disc);
+  border-radius: 50%;
+}
+.wheel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform: rotate(var(--spin-degree, 0deg));
+}
+/* Human-pull spin: a small backward wind-up, then a strong forward pull that decelerates
+   with friction to a dead stop at the target -- no overshoot, no settling backward.
+   --spin-degree already holds the final value while this plays, so removing is-spinning
+   never causes a jump. */
+/* animation-name is overridden inline per spin (wheel-spin-0..4) to pick the deceleration
+   curve by force; the mid bucket here is the fallback. */
+.wheel.is-spinning {
+  animation: wheel-spin-2 var(--spin-duration, 5s) forwards;
+}
+/* Five forward-pull curves selected by spin force (forceBucket in spin.ts). Each is an
+   ease-in-out with a slow wind-up start, a hard pull to a high peak, then a rapid slowdown
+   that eases into a long, gentle glide tail (x2 = 0.18, y2 = 1): velocity creeps smoothly
+   from moderate down to near-zero over the final 40%, so the wheel never brakes to an abrupt
+   stop. The tail is shared; force varies only the wind-up. Bigger per-spin variation comes
+   from the turn count. The 0-9% segment is the shared backward tug. */
+@keyframes wheel-spin-0 {
+  0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.34, .05, .18, 1); }
+  100% { transform: rotate(var(--spin-to, 0deg)); }
+}
+@keyframes wheel-spin-1 {
+  0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.32, .07, .18, 1); }
+  100% { transform: rotate(var(--spin-to, 0deg)); }
+}
+@keyframes wheel-spin-2 {
+  0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.30, .09, .18, 1); }
+  100% { transform: rotate(var(--spin-to, 0deg)); }
+}
+@keyframes wheel-spin-3 {
+  0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.28, .11, .18, 1); }
+  100% { transform: rotate(var(--spin-to, 0deg)); }
+}
+@keyframes wheel-spin-4 {
+  0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.26, .13, .18, 1); }
+  100% { transform: rotate(var(--spin-to, 0deg)); }
+}
+.wheel-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.slice-even {
+  stroke: var(--slice-border, #c76b7d);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+/* Fixed top-left light source: these overlays are siblings of .wheel, not children,
+   so they never rotate with the disc. */
+/* Flat slices: only a faint depth cue remains, not a glossy sphere. */
+.wheel-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.05) 100%);
+  mix-blend-mode: soft-light;
+}
+.wheel-highlight {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 27% 22%, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 42%);
+}
+/* Thick solid rim band, drawn in the 0..500 viewBox so its thickness scales with the
+   disc regardless of --scale; overlaps the outer edge of the slice fill like a bezel. */
+.wheel-rim-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.entry {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transform: rotate(calc(var(--entry-mid-deg) - 90deg));
+  pointer-events: none;
+}
+.entry-text {
+  /* Centred in the band between the hub and rim (--entry-top is derived from the hub size)
+     and grown symmetrically by fitEntryText, so a bigger label never creeps into the hub. */
+  position: absolute;
+  top: var(--entry-top, 22%);
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+  text-align: center;
+  color: var(--entry-color, #fff);
+  font-size: var(--entry-font-size, 15px);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+:root {
+  --slice-bg-even: #ab4bb8;
+  --slice-bg-odd: #d9a9e8;
+  /* Gem pointer facet stops; the scheme overrides these to match the palette. */
+  --gem-light: #d9b6f2;
+  --gem-mid: #a259d9;
+  --gem-dark: #6d2fa0;
+  --gem-edge: #4a1f73;
+}
+/* Above the rotating disc + entry labels so the hub and pointer always sit on top of the text. */
+.details { position: absolute; left: 0; top: var(--hr); width: var(--disc); height: var(--disc); pointer-events: none; z-index: 3; }
+/* Flat concentric rings (outer deep-purple, mid lavender, inner light-pink coin bed)
+   instead of a glossy 3D sphere. Ring stops are hard-edged percentages of the hub. */
+.centerpiece {
+  position: absolute; left: 50%; top: 50%; width: var(--hub-size, 22%); height: auto; aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  border: 4px solid var(--rim-color, #6f2f80);
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--hub-inner, #ffe1f0) 0%, var(--hub-inner, #ffe1f0) 44%,
+    var(--slice-bg-odd, #d9a9e8) 44%, var(--slice-bg-odd, #d9a9e8) 72%,
+    var(--centerpiece-bg, #6f2f80) 72%, var(--centerpiece-bg, #6f2f80) 100%
+  );
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  color: #fff;
+}
+.center-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hub-icon-svg { width: 46%; height: 46%; }
+/* Coin glyph sits on the light-pink inner ring, so it reads in deep purple, not white. */
+.cb-coin { color: var(--centerpiece-bg, #6f2f80); }
+/* The image sits inset from the centerpiece edge so the knob's own bevel/rim shows
+   as a ring around it, and a gloss layer on top keeps the glossy-button look. */
+.hub-image-wrap {
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.25);
+}
+.hub-image { width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; transform-origin: center; display: block; }
+/* Fill mode: the image (and its gloss) cover the hub out to the inner edge of the rim. */
+.centerpiece.hub-fill .hub-image-wrap, .centerpiece.hub-fill .hub-image-gloss { inset: 0; }
+.hub-image-gloss {
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 45%),
+    radial-gradient(circle at 68% 84%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 55%);
+  mix-blend-mode: soft-light;
+}
+.hub-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.hub-text-inner {
+  max-width: 100%;
+  text-align: center;
+  white-space: pre-wrap;
+  line-height: 1.05;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.hub-text-curve { width: 100%; height: 100%; }
+.hub-text-curve-text { fill: #fff; font-weight: 700; }
+.headpiece {
+  position: absolute; left: 50%; top: -7%; width: 9%; height: 16%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55));
+}
+.headpiece-gem { width: 100%; height: 100%; display: block; overflow: visible; }
+.title-wrap {
+  /* Anchored by its bottom a configurable gap above the wheel top (the disc starts --disc px
+     up from the container bottom), so the spacing knob is independent of the pill's height. */
+  position: absolute; left: 50%; top: auto; bottom: calc(var(--disc, 500px) + var(--title-gap, 52px));
+  transform: translateX(-50%);
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--plate-bg, #ffe1e7); color: var(--title-color, #b64e5f);
+  font-weight: 600; font-size: var(--title-font, 15px); white-space: nowrap; text-align: center;
+  display: flex; align-items: center; justify-content: center; /* keep the title centered when the pill is wider than its text */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  /* The pill's width is driven in JS: it grows instantly to fit a wider label and only
+     shrinks after the title settles (debounced), so the slot-machine roll never jitters. */
+  transition: width 0.1s ease;
+}
+.set-style-halfwheel .wheel-clip { clip-path: inset(0 0 40% 0); }
+.confetti {
+  position: absolute;
+  left: 0;
+  top: var(--hr);
+  width: var(--disc);
+  height: var(--disc);
+  pointer-events: none;
+  z-index: 5;
+}

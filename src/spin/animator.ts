@@ -1,0 +1,176 @@
+import type { WheelDom } from "../render/wheel.js";
+import type { WheelConfig } from "../config/parse.js";
+import { layout, sliceAtAngle, type SliceLayout } from "../model/geometry.js";
+import { deg, normalizeDeg } from "../model/units.js";
+import {
+  resolveLanding,
+  pickRestAngle,
+  pickForce,
+  spinTurns,
+  forceBucket,
+  nextRotation,
+  type SpinResult,
+  type Rng,
+} from "../model/spin.js";
+
+export interface SpinHooks {
+  onResult(result: SpinResult): void;
+  onStart?(): void;
+  onTick?(): void;
+  // The slice currently under the pointer during the spin, whenever it changes. Driven by
+  // the live rotation, so it tracks the wheel's speed.
+  onSpinSlice?(index: number): void;
+}
+
+export interface Animator {
+  spin(planned?: SpinResult): void;
+  dispose(): void;
+  isSpinning(): boolean;
+  currentRotationDeg(): number;
+}
+
+const SETTLE_GRACE_MS = 50; // fallback past animationend for headless environments
+const WINDUP_DEG = 22; // backward wind-up before the forward pull; a weightier tug
+
+// Reads the wheel's current rotation (degrees, in [-180, 180]) from its computed transform
+// matrix. Returns undefined when no transform is applied (e.g. jsdom without the wheel
+// stylesheet loaded), which is the signal to stay inert rather than drive fake ticks.
+function readTransformAngleDeg(elm: HTMLElement): number | undefined {
+  if (typeof getComputedStyle !== "function") return undefined;
+  const transform = getComputedStyle(elm).transform;
+  if (!transform || transform === "none") return undefined;
+  const match = /matrix\(([^)]+)\)/.exec(transform);
+  if (!match) return undefined;
+  const parts = match[1]!.split(",").map((p) => Number(p.trim()));
+  const a = parts[0];
+  const b = parts[1];
+  if (a === undefined || b === undefined || !Number.isFinite(a) || !Number.isFinite(b)) return undefined;
+  return Math.atan2(b, a) * (180 / Math.PI);
+}
+
+interface FrameHooks {
+  onTick?: (() => void) | undefined;
+  onSlice?: ((index: number) => void) | undefined;
+}
+
+// Samples the wheel's live rotation via requestAnimationFrame. Drives onTick once per
+// (360 / sliceCount) degrees of ACTUAL rendered rotation, and reports the slice under the
+// pointer (onSlice) whenever it changes -- both track the wheel's real speed. Stops once
+// isDone() is true, and never reschedules if a rotation reading is unavailable, so it is
+// inert under jsdom.
+function driveFrame(wheelEl: HTMLElement, laid: readonly SliceLayout[], hooks: FrameHooks, isDone: () => boolean): void {
+  if (typeof requestAnimationFrame !== "function") return;
+  const stepDeg = 360 / laid.length;
+  let laps = 0;
+  let lastRaw: number | undefined;
+  let nextThreshold = stepDeg;
+  let lastSlice = -1;
+
+  const frame = (): void => {
+    if (isDone()) return;
+    const raw = readTransformAngleDeg(wheelEl);
+    if (raw === undefined) return; // no computed transform available; stay inert
+    if (lastRaw !== undefined && raw < lastRaw - 180) laps += 1; // wrapped 180 -> -180
+    lastRaw = raw;
+    if (hooks.onTick) {
+      const accumulated = laps * 360 + raw;
+      while (accumulated >= nextThreshold) {
+        hooks.onTick();
+        nextThreshold += stepDeg;
+      }
+    }
+    if (hooks.onSlice) {
+      // pointer degree = normalize(90 - rotation); laps*360 drops out under normalization.
+      const slice = sliceAtAngle(laid, normalizeDeg(deg(90 - raw))) as number;
+      if (slice !== lastSlice) {
+        lastSlice = slice;
+        hooks.onSlice(slice);
+      }
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+export function createAnimator(
+  dom: WheelDom,
+  cfg: WheelConfig,
+  hooks: SpinHooks,
+  rng: Rng = Math.random,
+  // Seeds the rotation accumulator so a controller rebuild (new DOM, new animator) can
+  // carry rotation forward instead of visually snapping back to 0.
+  initialRotationDeg = 0,
+): Animator {
+  const laid = layout(cfg.slices);
+  let rotation = initialRotationDeg;
+  let spinning = false;
+  let disposed = false;
+  let cancelSpin: (() => void) | undefined;
+
+  const spin = (planned?: SpinResult): void => {
+    if (spinning || disposed) return;
+    spinning = true;
+    hooks.onStart?.();
+
+    // Resolve the landing BEFORE animating: with magnetism on, result.restAngle is the
+    // snapped slice center, and the animation must target that, not the raw rest angle.
+    const restAngle = pickRestAngle(rng);
+    const result = planned ?? resolveLanding(laid, restAngle, { magnetism: cfg.magnetism, seamBandDeg: cfg.seamBandDeg, seamSnap: cfg.seamSnap });
+    // A random per-spin force varies momentum and the deceleration curve within a fixed
+    // duration, so some spins keep going longer before they stop.
+    const force = pickForce(rng, cfg.spinForceVariance);
+    const spins = planned ? (cfg.spinDurationSec < 4 ? 2 : 4 + Math.round(force)) : spinTurns(force);
+    const from = rotation;
+    const to = nextRotation(rotation, result.restAngle, spins);
+    const windup = from - (planned ? 14 : WINDUP_DEG);
+
+    dom.wheel.style.setProperty("--spin-from", from + "deg");
+    dom.wheel.style.setProperty("--spin-windup", windup + "deg");
+    dom.wheel.style.setProperty("--spin-to", to + "deg");
+    dom.wheel.style.setProperty("--spin-duration", cfg.spinDurationSec + "s");
+    // Clear the prior animation and flush it, so re-selecting the same keyframe name still
+    // restarts the animation. Without this, two consecutive spins that pick the same force
+    // bucket leave animation-name unchanged and the CSS animation never replays -- the wheel
+    // just snaps to the final angle and appears to stay in place.
+    dom.wheel.style.animationName = "none";
+    void dom.wheel.offsetHeight;
+    // Select the deceleration curve by force; the timing function is baked into the named
+    // keyframe rule because a per-keyframe timing function cannot read a CSS var.
+    dom.wheel.style.animationName = planned ? "scam-spin" : "wheel-spin-" + forceBucket(force);
+    // The resting transform (rotate(var(--spin-degree))) must already equal the final
+    // value: once is-spinning is removed at finish(), the keyframe animation's 100%
+    // frame is replaced by this resting value, and it must match or the wheel jumps.
+    dom.setRotation(to);
+    rotation = to;
+
+    dom.wheel.classList.add("is-spinning");
+    // Force a layout flush so the animation has a committed start state before the
+    // class takes effect in the same task.
+    void dom.wheel.offsetHeight;
+
+    let done = false;
+    const finish = (): void => {
+      if (done) return;
+      done = true;
+      spinning = false;
+      clearTimeout(timer);
+      dom.wheel.removeEventListener("animationend", finish);
+      dom.wheel.classList.remove("is-spinning");
+      hooks.onResult(result);
+    };
+    dom.wheel.addEventListener("animationend", finish, { once: true });
+    const timer = setTimeout(finish, cfg.spinDurationSec * 1000 + SETTLE_GRACE_MS);
+    cancelSpin = () => {
+      done = true;
+      spinning = false;
+      clearTimeout(timer);
+      dom.wheel.removeEventListener("animationend", finish);
+      dom.wheel.classList.remove("is-spinning");
+    };
+    if (hooks.onTick || hooks.onSpinSlice) {
+      driveFrame(dom.wheel, laid, { onTick: hooks.onTick, onSlice: hooks.onSpinSlice }, () => done);
+    }
+  };
+
+  return { spin, isSpinning: () => spinning, currentRotationDeg: () => rotation, dispose: () => { disposed = true; cancelSpin?.(); } };
+}

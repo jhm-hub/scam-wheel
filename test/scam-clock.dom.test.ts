@@ -1,0 +1,5 @@
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {mountWidget,type MountHandle} from '../src/app.js';
+let handle:MountHandle|undefined;
+beforeEach(()=>vi.useFakeTimers({toFake:['setTimeout','clearTimeout','setInterval','clearInterval','Date','performance']}));afterEach(()=>{handle?.dispose();document.body.replaceChildren();vi.useRealTimers();});
+it('Dash completes a spin begun before the buzzer, then accepts queued revival seconds',async()=>{const h=mountWidget(document,{fieldData:{gameMode:'scam',disableSound:true}},{rng:()=>.041});if('error'in h)throw Error('mount');handle=h;h.scam!.showcase(22);await vi.advanceTimersByTimeAsync(5000);h.spin();await vi.advanceTimersByTimeAsync(6600);expect(h.scam!.snapshot().completed).toBe(1);await vi.advanceTimersByTimeAsync(11600);h.spin();await vi.advanceTimersByTimeAsync(3200);expect(h.scam!.snapshot()).toMatchObject({completed:2,seconds:0});h.spin();await vi.advanceTimersByTimeAsync(5000);expect(h.scam!.snapshot().completed).toBe(2);h.scam!.bonus(5);h.spin();await vi.advanceTimersByTimeAsync(3200);expect(h.scam!.snapshot().completed).toBe(3);});

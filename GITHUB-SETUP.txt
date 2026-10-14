@@ -1,0 +1,122 @@
+FAITH SCAM WHEEL - GITHUB AND LIVE TOTALS SETUP
+
+READY TO UPLOAD; NOT DEPLOYED YET
+
+EASIEST UPLOAD: GITHUB DESKTOP
+1. In GitHub Desktop, choose File > New Repository. Name it faith-scam-wheel
+   (or your preferred name), use main as the branch, and save it on the
+   external editing drive in its own folder, outside the FaithHQ repository.
+2. Extract Faith-Scam-Wheel-GitHub-Source.zip. Copy its CONTENTS into that
+   new repository folder. package.json, src/, scripts/ and .github/ must be
+   at the top level. Do not put the ZIP itself or a wrapper folder there.
+   On Mac, Command-Shift-period reveals hidden files so .github is included.
+   Include the supplied license and font notices. Do not copy node_modules,
+   dist, review files, stream overlay URLs or the whole FaithHQ workspace.
+3. In GitHub Desktop, review the Changes list, enter a summary such as
+   "Add Faith Scam Wheel", then Commit to main. Click Publish repository.
+   A public repository is the simplest choice for free GitHub Pages. If
+   using a private repository, your account plan must support Pages.
+   If you already created a repository online, clone it in Desktop instead
+   of step 1, copy the same source contents, commit and Push origin.
+4. On GitHub, open Settings > Pages. Under Build and deployment set
+   Source to GitHub Actions. If the first deployment ran before this was
+   enabled, go to Actions > Build and deploy GH Pages > Run workflow.
+5. Wait for the deployment to succeed. Open the website link in Settings
+   > Pages. The homepage is Faith's wheel. The workflow supplies the actual
+   website address automatically, including repository paths/custom domains.
+
+GitHub Desktop guide:
+https://docs.github.com/en/desktop/overview/creating-your-first-repository-using-github-desktop
+Pages setting:
+https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+
+INSTALL THE TWO STREAMELEMENTS OVERLAYS
+1. Open the published homepage. Set Faith's amounts/modes under Settings,
+   save, then open Stream setup. It has TWO installers.
+2. VIEWER WHEEL: make a new StreamElements overlay and add a Custom Widget.
+   Clear HTML, CSS, JS, Fields and Data, paste installer 1 into HTML, save.
+   Add this overlay URL to an OBS Browser Source in the streaming scene.
+   Use approximately 1000 x 1000. The background is transparent and the
+   permanent running totals are hidden. Final prize reveals remain visible.
+3. PRIVATE LIVE TOTALS: make a SECOND overlay on the SAME StreamElements
+   account, with a new Custom Widget. Clear the same tabs and paste
+   installer 2 into HTML. Size the widget to fill this overlay and save.
+   Open its overlay URL privately in a browser. In OBS, you can instead use
+   Docks > Custom Browser Docks and paste that URL into a new dock.
+   NEVER add this private totals overlay as a scene source.
+4. Keep one viewer instance running. Reuse that OBS source across scenes;
+   leave "Shutdown source when not visible" and "Refresh browser when
+   scene becomes active" off. Avoid opening a second live viewer URL.
+   Editor previews do not publish or accept game commands. Duplicate live
+   viewers wait while another viewer is active. After a refresh/restart,
+   allow up to about 15 seconds for the new viewer to connect.
+5. Send !scam new TestPlayer, then !scam spin in Faith's Twitch chat.
+   Check that the private panel says LIVE FROM OBS and its totals change.
+   Viewers should see only the wheel and game effects. Test this privately
+   before the first stream. No separate bot response or custom bot command
+   is needed; the StreamElements widget listens to Twitch chat events.
+
+BROADCASTER COMMANDS
+!scam or !scam spin - spin / reveal the scam
+!scam new PlayerName - cancel current round and start a fresh one
+!scam finish - end the round and show the final total on stream
+!scam bonus 1 - add a spin (queues seconds in the timed mode)
+!scam pause / !scam resume - pause/resume new actions and the timed clock
+!scam demo ID - reveal one specific game for a demo
+!scam yes / !scam no - resolve a boundary prompt
+!scam pick 1 ... !scam pick 12 / !scam reveal - mystery game choices
+!scam continue - dismiss the rainbow equation
+!scam encore / !scam bank - Encore or Exit choice
+
+Scam Wheel ignores !spin and !wheel, including with older saved scam
+settings. The ordinary wheels keep their original commands. Broadcaster
+permission remains the default; other chatters cannot trigger the game.
+
+HOW LIVE TOTALS WORK
+The actual StreamElements viewer widget sends cash, multiplier, spins/time,
+player and round status through the account's shared widget store. The
+private panel reads that state; it has no second wheel or payout logic.
+Updates normally arrive within about a second plus network delay. It also
+polls for recovery. If the viewer stops sending, the panel marks its last
+received values offline after about 12 seconds, rather than showing them
+as current. A restarted viewer starts a NEW round; saved totals are not a
+round-recovery system. Keep the private overlay link private.
+The public homepage is a local preview/editor, not the live totals panel.
+Its Play totals belong only to its own preview round.
+
+Hosted code updates load on widget refresh after a successful deployment;
+normal browser/hosting caches can briefly delay them. Do not refresh during
+a round. Changed game settings require saving and pasting a fresh viewer
+installer. The private panel installer does not contain game settings.
+
+OFFLINE CODE ALTERNATIVE
+Faith-StreamElements-HTML.txt contains the complete default viewer widget.
+Faith-StreamElements-Private-Totals.txt contains the complete private panel.
+Paste them into two StreamElements overlays as above. They still need an
+internet connection to StreamElements for chat/live totals; "offline" means
+no hosted JavaScript dependency. They do not receive GitHub code updates.
+Plain local HTML files have no StreamElements connection and do not sync.
+
+PUBLISHED OUTPUT
+/ or index.html, scam.html: Faith's preview, settings, demos and installers
+wheel.html: original ordinary wheel playground; demo.html redirects to it
+scam-stream.html: standalone transparent preview, with its OWN round
+monitor.html: panel preview; install in StreamElements to connect
+wheel.js, monitor.js: hosted viewer and private panel bundles
+StreamElements-Hosted-HTML.txt: default hosted viewer installer
+StreamElements-Private-Totals-Hosted.txt: hosted private panel installer
+StreamElements-HTML.txt, StreamElements-Private-Totals.txt: embedded copies
+
+LOCAL BUILD
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm build
+Optional: set FAITH_SITE_URL to the published HTTPS website address before
+building. GitHub Actions supplies it automatically. Use the Pages URL,
+not the github.com repository URL. No server or secret key is needed.
+
+VERIFICATION LIMIT
+Automated checks use simulated StreamElements chat and shared storage.
+The real GitHub deployment, StreamElements account and physical OBS/audio
+still need a private end-to-end check after the repository URL is supplied.
