@@ -95,11 +95,20 @@ export function buildScamWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts
     function boardConfig(spaces: Space[], seconds = c.spinSeconds): WheelConfig {
         const colors = state.mode === undefined ? [cfg.scheme.vars['--slice-bg-even'] ?? '#db9bbb', cfg.scheme.vars['--slice-bg-odd'] ?? '#bca9df', '#fff2cb'] : modeById(state.mode).colors;
         const resolved = slices(spaces).map((s, i) => ({ ...s, text: state.mode === 21 ? (i === 0 ? '$7' : '$777') : s.text, color: spaces[i]!.inactive ? '#323149' : s.color ?? (spaces[i]!.tag === 'laser' ? '#50b69e' : colors[i % 2])! }));
-        return { ...cfg, slices: resolved, style: 'fullwheel', scale: 1, title: '', fontFamily: 'Scam Arcade', labelSizeMax: 35, labelSizeMin: 4, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubTextStyle: 'fit', hubSize: 30, spinDurationSec: seconds, spinForceVariance: .22, magnetism: false, scheme: { kind: 'custom', vars: { ...cfg.scheme.vars, '--slice-bg-even': colors[0]!, '--slice-bg-odd': colors[1]!, '--rim-color': colors[0]!, '--centerpiece-bg': colors[0]!, '--hub-inner': colors[1]!, '--entry-color': '#fff9ec', '--slice-border': '#fff3e4', '--gem-light': '#fff5d4', '--gem-mid': colors[1]!, '--gem-dark': colors[0]!, '--gem-edge': '#a783ba' } } };
+        return { ...cfg, slices: resolved, style: 'fullwheel', scale: 1, title: '', fontFamily: 'Scam Arcade', labelSizeMax: 40, labelSizeMin: 4, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubTextStyle: 'fit', hubSize: 30, spinDurationSec: seconds, spinForceVariance: .22, magnetism: false, scheme: { kind: 'custom', vars: { ...cfg.scheme.vars, '--slice-bg-even': colors[0]!, '--slice-bg-odd': colors[1]!, '--rim-color': colors[0]!, '--centerpiece-bg': colors[0]!, '--hub-inner': colors[1]!, '--entry-color': '#fff9ec', '--slice-border': '#fff3e4', '--gem-light': '#fff5d4', '--gem-mid': colors[1]!, '--gem-dark': colors[0]!, '--gem-edge': '#a783ba' } } };
+    }
+    function setPrizeLabel(entry: HTMLElement, text: string) {
+        const target = entry.querySelector<HTMLElement>('.entry-text')!;
+        target.replaceChildren();
+        text.split('\n').forEach((line, i) => {
+            if (i) target.append(doc.createTextNode('\n'));
+            el(i ? 'prize-label-bonus' : 'prize-label-main', line, target);
+        });
     }
     function makeBoard(spaces: Space[], side: 'main' | 'twin', seconds = c.spinSeconds): BoardView {
         const wc = boardConfig(spaces, seconds), dom = buildWheel(doc, wc);
         dom.container.classList.add('scam-board', side);
+        dom.entries.forEach((entry, i) => setPrizeLabel(entry, wc.slices[i]!.text));
         dom.container.style.setProperty('--wheel-font', 'Scam Arcade');
         for (const [k, v] of Object.entries(wc.scheme.vars))
             dom.container.style.setProperty(k, v);
@@ -258,7 +267,7 @@ export function buildScamWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts
                 for (let frame = 0; frame <= 18; frame++) {
                     state.board.forEach((space, i) => { if (space.cashSpace) {
                         const from = originals[i]!.prize.cash;
-                        board!.dom.entries[i]!.querySelector('.entry-text')!.textContent = '$' + Math.round(from + (space.prize.cash - from) * frame / 18) + (space.prize.spins ? '\n+1 SPIN' : '');
+                        setPrizeLabel(board!.dom.entries[i]!, '$' + Math.round(from + (space.prize.cash - from) * frame / 18) + (space.prize.spins ? '\n+1 SPIN' : ''));
                     } });
                     await sleep(75);
                 }
@@ -513,7 +522,7 @@ export function buildScamWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts
             state.picks.push(index); board?.dom.entries.forEach((e, i) => e.classList.toggle('picked', state.picks.includes(i))); message = state.picks.length + ' / 6 SECRETS CHOSEN'; sound.tick(); update(); }, revealPicks() { if (state.phase !== 'picking' || state.picks.length !== 6 || busy)
             return; busy = true; timeline(async () => { for (const i of state.picks) {
             const entry = board!.dom.entries[i]!;
-            entry.querySelector('.entry-text')!.textContent = label(state.board[i]!);
+            setPrizeLabel(entry, label(state.board[i]!));
             entry.classList.remove('mystery-covered');
             entry.querySelector('button')?.remove();
             board!.dom.slices[i]!.classList.add('is-winner');

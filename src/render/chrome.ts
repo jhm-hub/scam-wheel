@@ -163,6 +163,7 @@ export function refitEntries(
   minPx: number = MIN_ENTRY_FONT_PX,
   midR: number = LABEL_MID_R,
   radialFrac: number = LABEL_RADIAL,
+  sizePolicy: "uniform" | "individual" = "uniform",
 ): void {
   const R = dom.container.clientWidth / 2;
   if (!R) return;
@@ -176,7 +177,7 @@ export function refitEntries(
     fits.push(fitEntryText(textEl, sizeTurn, R, maxPx, minPx, midR, radialFrac));
     els.push(textEl);
   }
-  if (els.length === 0) return;
+  if (els.length === 0 || sizePolicy === "individual") return;
   const maxFit = Math.max(...fits);
   // Common size = smallest fit among labels that are not far-tighter outliers.
   let common = maxFit;
@@ -429,7 +430,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
     fitStage();
     resetPillWidth();
     if (fitTextEl) fitHubText(fitTextEl);
-    refitEntries(dom, cfg.labelSizeMax, cfg.labelSizeMin, band.midR, band.radialFrac);
+    refitEntries(dom, cfg.labelSizeMax, cfg.labelSizeMin, band.midR, band.radialFrac, cfg.gameMode === "scam" ? "individual" : "uniform");
   };
   refit();
   if (typeof window !== "undefined") {
