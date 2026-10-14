@@ -8,7 +8,9 @@ Scam Wheel is an optional game type.
 OPEN IT
 - dist/index.html: Faith's wheel homepage and host desk.
 - dist/scam.html: the same desk at its established address.
-- dist/scam-stream.html: transparent overlay with controls hidden.
+- dist/scam-stream.html: standalone transparent overlay, independent game.
+- dist/browser.html: private buttons and live totals for the browser option.
+- dist/browser-wheel.html: paired transparent viewer (use its private link).
 - dist/wheel.html: the original general wheel configuration playground.
 - dist/demo.html: redirects to wheel.html, preserving a shared config code.
 
@@ -139,7 +141,8 @@ runs typecheck and tests, then builds and publishes dist/. It gets the site
 address from GitHub Pages automatically through FAITH_SITE_URL.
 A configured build also writes dist/StreamElements-Hosted-HTML.txt using
 default settings. Prefer Stream setup for Faith's customized settings.
-No repository URL is hard-coded and no site has been published locally.
+The published site is https://jhm-hub.github.io/scam-wheel/.
+The configured build uses its actual Pages address.
 
 VIEWER LAYOUT
 The permanent cash, multiplier and spins row below the wheel is hidden in
@@ -161,3 +164,58 @@ Store documentation: https://docs.streamelements.com/overlays/custom-widget
 Commands are fixed to !scam in scam configs, including legacy imports;
 ordinary configs retain their configured commands. No chat messages are
 sent by the private monitor. Full operator instructions: GITHUB-SETUP.txt.
+
+BROWSER LIVE SETUP
+Open https://jhm-hub.github.io/scam-wheel/browser.html in a normal browser
+on the streaming computer. It creates a private control room. Expand
+Put the wheel on stream and copy the wheel link. Add that link as an
+800 x 800 Browser Source in Streamlabs or OBS. No StreamElements account
+is needed for this option. Only the viewer link belongs in the scene.
+Keep the controls page in a separate private window or private browser dock.
+
+The badge should say LIVE WHEEL CONNECTED. The viewer owns the game;
+buttons here operate that game and totals come back from it. For a browser
+demo, use Open wheel to test instead. Close the test viewer before opening
+the same link in Streamlabs. Use one viewer and reuse its source across
+scenes, with automatic source shutdown and scene refresh turned off.
+
+Enter Faith's Twitch channel in the private controls and Connect Twitch
+chat. The viewer listens without sending messages, passwords or tokens.
+Only the channel owner may use !scam commands by default. The checkbox
+can also allow channel moderators. Ordinary viewers, stale messages and
+shared-chat messages from other channels are ignored. Buttons remain
+available when chat is disconnected. Chat stays active when the private
+controls are closed, as long as the viewer is running and online.
+
+To change amounts, open Settings & demos in the SAME browser as the
+private controls, save the changes, then Apply saved settings & start fresh
+between rounds. Names, all 25 original demos, all three proposals, mystery
+picks and the special mode choices are supported. New round interrupts a
+round; Apply and Demo wait until the current animation is finished.
+
+Save the private controls link. Both links include a secret room key; keep
+them off stream and do not share them with viewers. Anyone with either
+complete link can control the room. Reopening controls preserves the live
+round. Refreshing or closing the VIEWER loses its current round; saved
+settings and Twitch channel are restored, but gameplay is not recovered.
+Disconnected buttons do not queue actions. Old totals are marked offline.
+
+The paired browser option needs internet, HTTPS (localhost for development),
+WebRTC, PeerJS Cloud signaling/relay availability and Twitch public IRC.
+The room key stays in the URL fragment; it is not sent to the static host
+or signaling service. Mutual HMAC challenges authenticate the encrypted
+data connection. Private controls contain no game engine. Duplicate viewer
+protection is best-effort, not a substitute for using one active source.
+Restrictive networks or unavailable services can prevent connection.
+The existing StreamElements installation is a separate alternative.
+
+Check audio in Streamlabs before going live. Browser autoplay policies can
+block sounds in a normal browser until the wheel is clicked. The Sound
+button mutes/unmutes the game, but cannot override browser sound policy.
+The game artwork and sounds remain bundled; live pairing and chat require
+network services. Physical Streamlabs/OBS and Faith's account permissions
+need a private test on her machine.
+
+Browser implementation: src/browser/. Tests cover authenticated pairing,
+wrong-key rejection, disconnected actions, command parsing, owner/moderator
+permissions, chat deduplication and reconnects. No chat messages are sent.

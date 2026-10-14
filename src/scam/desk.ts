@@ -38,6 +38,12 @@ const head = make('div', 'desk-head');
 make('div', 'desk-eyebrow', 'FAITH / STREAM GAMES', head);
 make('h1', '', 'Scam Wheel', head);
 make('p', '', 'The third spin has other plans.', head);
+const browserSite = location.protocol === 'http:' ? location.href : Wheel.publishedSiteUrl(location.href) ?? window.FAITH_HOSTED_URL;
+if (browserSite || location.protocol === 'http:') {
+    const browserLink = make('a', 'browser-live-link', 'Open live browser controls', head);
+    browserLink.href = new URL('browser.html', browserSite ?? location.href).href;
+    browserLink.target = '_blank'; browserLink.rel = 'noopener';
+}
 const tabs = make('nav', 'desk-tabs');
 const panels = new Map<string, HTMLElement>();
 for (const [id, label] of [['round', 'Play'], ['showcase', 'Showcase'], ['settings', 'Settings'], ['stream', 'Stream setup']]) {
@@ -204,6 +210,7 @@ button(files, 'Download this desk', () => download('Faith-Scam-Wheel.html', expo
 button(files, 'Offline StreamElements HTML', () => { const html = '<!doctype html><html><head><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body><script>window.WHEEL_CONFIG=' + JSON.stringify(currentConfigCode()) + ';<\/script><script>' + window.FAITH_ASSETS.wheel.replace(/<\/script/gi, '<\\/script') + '<\/script></body></html>'; download('Faith-StreamElements-HTML.txt', html, 'text/plain'); });
 const streamSetup = panels.get('stream')!;
 make('h2', '', 'Ready for stream', streamSetup);
+make('p', 'desk-hint', 'For a direct Streamlabs/OBS browser link with private controls and Twitch commands, use Open live browser controls above. The installers below are the separate StreamElements option.', streamSetup);
 make('p', 'desk-hint', 'Save your amounts and modes in Settings first. This installer includes those saved choices and loads the wheel from Faith\'s website.', streamSetup);
 const siteAddress = input(streamSetup, 'PUBLISHED WHEEL ADDRESS', Wheel.publishedSiteUrl(location.href) ?? window.FAITH_HOSTED_URL ?? '', 'url');
 siteAddress.placeholder = 'Paste the published HTTPS website address';

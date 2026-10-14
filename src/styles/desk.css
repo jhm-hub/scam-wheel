@@ -5,3 +5,5 @@
 .desk-panel .primary:hover{background:#a783bd}
 
 .host-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:13px 0 16px}.host-stat{min-width:0;padding:11px 5px;background:#f3e7f2;border:1px solid #e5cfe6;border-radius:8px;text-align:center}.host-stat dt{font:750 9px/1.4 system-ui;color:#9873a6}.host-stat dd{margin:5px 0 0;font:22px/1.2 'Scam Arcade',sans-serif;color:#9f74ad;overflow-wrap:anywhere}
+
+.browser-live-link{display:inline-block;margin-top:10px;padding:9px 12px;background:#eee0f0;border:1px solid #d5bbde;border-radius:8px;color:#91669f;font:750 12px system-ui;text-decoration:none}.browser-live-link:hover{background:#e6d3eb}

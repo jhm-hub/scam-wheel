@@ -27,6 +27,12 @@ export async function buildScamPages() {
   writeFileSync('dist/scam-stream.html', html(true));
   const defaults = { gameMode: 'scam', spinCommand: '!scam', wheelCommand: '!scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', fontFamily: '', enableCommands: true, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubSize: 30, volumeWin: 55 };
   const code = Buffer.from(JSON.stringify(defaults)).toString('base64url');
+  await esbuild.build({ entryPoints: ['src/browser/controls.ts'], bundle: true, format: 'iife', outfile: 'dist/browser-controls.js', target: 'es2022' });
+  await esbuild.build({ entryPoints: ['src/browser/viewer.ts'], bundle: true, format: 'iife', outfile: 'dist/browser-viewer.js', target: 'es2022' });
+  const browserCss = readFileSync('src/browser/controls.css', 'utf8');
+  const browserFont = readFileSync('assets/Bungee-Regular.ttf').toString('base64');
+  writeFileSync('dist/browser.html', '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Scam Wheel - Private Browser Controls</title><style>@font-face{font-family:"Scam Arcade";src:url(data:font/ttf;base64,' + browserFont + ')}' + browserCss + '</style></head><body><script src="./browser-controls.js"></script></body></html>');
+  writeFileSync('dist/browser-wheel.html', '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Scam Wheel - Live Browser Wheel</title><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body><script src="./wheel.js"></script><script src="./browser-viewer.js"></script></body></html>');
   writeFileSync('dist/StreamElements-HTML.txt', '<!doctype html><html><head><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body><script>window.WHEEL_CONFIG=' + JSON.stringify(code) + ';</script><script>' + assets.wheel.replace(/<\/script/gi, '<\\/script') + '</script></body></html>');
   if (siteUrl) {
     writeFileSync('dist/StreamElements-Hosted-HTML.txt', hostedInstaller(code, siteUrl));
