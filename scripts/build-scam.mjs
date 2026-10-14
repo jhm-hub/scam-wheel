@@ -25,7 +25,7 @@ export async function buildScamPages() {
   writeFileSync('dist/index.html', html(false));
   writeFileSync('dist/scam.html', html(false));
   writeFileSync('dist/scam-stream.html', html(true));
-  const defaults = { gameMode: 'scam', spinCommand: '!scam', wheelCommand: '!scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', fontFamily: '', enableCommands: true, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubSize: 18, volumeWin: 55 };
+  const defaults = { gameMode: 'scam', spinCommand: '!scam', wheelCommand: '!scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', fontFamily: '', enableCommands: true, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubSize: 30, volumeWin: 55 };
   const code = Buffer.from(JSON.stringify(defaults)).toString('base64url');
   writeFileSync('dist/StreamElements-HTML.txt', '<!doctype html><html><head><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body><script>window.WHEEL_CONFIG=' + JSON.stringify(code) + ';</script><script>' + assets.wheel.replace(/<\/script/gi, '<\\/script') + '</script></body></html>');
   if (siteUrl) {

@@ -19,7 +19,7 @@ declare global {
 const doc = document, stream = window.FAITH_STREAM === true;
 const settingsPath = location.pathname.endsWith('/') ? location.pathname + 'scam.html' : location.pathname.replace(/\/index\.html$/, '/scam.html');
 const STORAGE = 'faith-scam-wheel/native/v1:' + settingsPath;
-let base: FieldData = { gameMode: 'scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', fontFamily: '', spinDuration: 6.2, disableSound: false, volumeWin: 55, volumeTick: 35, enableCommands: true, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubSize: 18, ...window.FAITH_SETTINGS };
+let base: FieldData = { gameMode: 'scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', fontFamily: '', spinDuration: 6.2, disableSound: false, volumeWin: 55, volumeTick: 35, enableCommands: true, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubSize: 30, ...window.FAITH_SETTINGS };
 try {
     const saved = localStorage.getItem(STORAGE) ?? (!window.FAITH_SETTINGS ? localStorage.getItem('faith-scam-wheel/native/v1') : null);
     if (saved)
