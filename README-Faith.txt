@@ -1,3 +1,5 @@
+Saved settings and permanent OBS source: see SAVED-VERSIONS.md.
+
 FAITH SCAM WHEEL - NATIVE ARCADE PROTOTYPE
 
 This is a working extension of the supplied StreamElements wheel source.

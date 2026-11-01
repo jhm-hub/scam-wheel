@@ -1,3 +1,4 @@
+import { createVersionLibrary, canApplySettings, VERSIONS_KEY } from './saved-versions.js';
 import type { FieldData } from '../se/types.js';
 import { defaultScamConfig, parseScamConfig } from '../scam/config.js';
 import { MODES } from '../scam/catalog.js';
@@ -35,7 +36,7 @@ const badge = node('p', header, 'Connecting...', 'connection'); badge.setAttribu
 const setup = node('details', main, '', 'panel setup'); setup.open = true;
 node('summary', setup, 'Put the wheel on stream');
 node('p', setup, 'Add a Browser Source in Streamlabs or OBS. Paste this link and use 800 x 800.');
-const source = field(setup, 'Wheel link - keep private', viewerUrl.href); source.readOnly = true;
+const source = field(setup, 'Permanent OBS link - keep private', viewerUrl.href); source.readOnly = true;
 const sourceButtons = node('div', setup, '', 'button-row');
 button(sourceButtons, 'Copy wheel link', () => copy(viewerUrl.href, source));
 button(sourceButtons, 'Open wheel to test', () => window.open(viewerUrl.href, '_blank', 'noopener'), 'secondary');
@@ -97,9 +98,15 @@ node('p', more, '!scam bonus 1, !scam pause, !scam resume, !scam demo ID, !scam 
 
 const settings = node('section', main, '', 'panel');
 node('h2', settings, 'Prizes & game modes');
-node('p', settings, 'Use the usual Settings page to edit amounts, colors, mode names and the random pool. Save there, then apply them here between rounds.');
+node('p', settings, 'Edit and save versions on the Settings page, then choose one here between viewers. All versions use the same permanent OBS source.');
+const library = createVersionLibrary(localStorage, legacyFields());
+const versionLabel = node('label', settings, 'Saved version to use', 'field'), versionSelect = node('select', versionLabel); versionSelect.setAttribute('aria-label', 'Saved version');
+function refreshVersions() { try { const current = library.current(); versionSelect.replaceChildren(...library.list().map(v => new Option(v.name, v.id))); versionSelect.value = current.id; } catch (e) { notice.textContent = String(e); } }
+refreshVersions();
+versionSelect.onchange = () => { try { library.select(versionSelect.value); refreshModeNames(); notice.textContent = 'Version ready. Use Apply saved version between viewers.'; } catch (e) { notice.textContent = String(e); } };
+window.addEventListener('storage', e => { if (e.key === VERSIONS_KEY) { refreshVersions(); refreshModeNames(); } });
 const settingsLink = node('a', settings, 'Open settings & demos', 'button-link'); settingsLink.href = settingsUrl.href; settingsLink.target = '_blank'; settingsLink.rel = 'noopener';
-const apply = button(settings, 'Apply saved settings & start fresh', () => sendConfig(true), 'secondary');
+const apply = button(settings, 'Apply saved version & start fresh', () => sendConfig(true), 'secondary');
 const demoLabel = node('label', settings, 'Demo a scam', 'field'); const demo = node('select', demoLabel);
 function refreshModeNames() {
     const names = parseScamConfig(savedFields().scamConfig).modes;
@@ -111,11 +118,13 @@ function refreshModeNames() {
 }
 refreshModeNames();
 const demoButton = button(settings, 'Start demo', () => command({ type: 'demo', mode: Number(demo.value) }));
+main.insertBefore(settings, chatPanel);
 const footer = node('footer', main, 'Keep both links private. Internet is needed to pair the pages and receive Twitch chat. The existing StreamElements installer is still available on the setup page.');
 footer.className = 'hint';
 
-function savedFields(): FieldData {
-    let fields: FieldData = { gameMode: 'scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', spinDuration: 6.2, volumeWin: 55, scamConfig: JSON.stringify(defaultScamConfig()) };
+function defaultFields(): FieldData { return { gameMode: 'scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', spinDuration: 6.2, volumeWin: 55, scamConfig: JSON.stringify(defaultScamConfig()) }; }
+function legacyFields(): FieldData {
+    let fields: FieldData = defaultFields();
     try {
         const path = new URL('scam.html', location.href).pathname;
         const saved = readSaved('faith-scam-wheel/native/v1:' + path) ?? readSaved('faith-scam-wheel/native/v1');
@@ -125,7 +134,9 @@ function savedFields(): FieldData {
     fields.gameMode = 'scam'; fields.importConfig = '';
     return fields;
 }
+function savedFields(): FieldData { try { return { ...defaultFields(), ...library.current().config, gameMode: 'scam', importConfig: '' }; } catch { return legacyFields(); } }
 function sendConfig(reset: boolean) {
+    if (reset && !canApplySettings(latest?.totals)) { notice.textContent = 'Finish the current viewer before applying settings.'; return; }
     refreshModeNames();
     const sent = link.send({ type: 'config', id: crypto.randomUUID(), fields: savedFields(), reset, ...prefs });
     notice.textContent = sent ? (reset ? 'Applying settings to the live wheel...' : 'Connecting your wheel...') : 'Open the wheel link first. Settings are ready for it.';
@@ -150,7 +161,7 @@ function render() {
     minus.disabled = plus.disabled = !available || ['picking', 'finished'].includes(s!.phase) || s!.mode === 21 || s!.mode === 25;
     minus.textContent = s?.mode === 22 ? '- 1 sec' : '- 1 spin'; plus.textContent = s?.mode === 22 ? '+ 1 sec' : '+ 1 spin';
     pause.disabled = sound.disabled = !online; pause.textContent = s?.paused ? 'Resume' : 'Pause'; sound.textContent = muted ? 'Sound off' : 'Sound on';
-    apply.disabled = demoButton.disabled = !available;
+    demoButton.disabled = !available; apply.disabled = !available || !canApplySettings(s);
     boundaries.hidden = s?.phase !== 'boundary'; picksBox.hidden = s?.phase !== 'picking'; continueButton.hidden = s?.phase !== 'rainbow'; encoreButtons.hidden = s?.phase !== 'choice';
     for (const b of [both, pointer, continueButton, encore, exit, ...picks]) b.disabled = !available;
     reveal.disabled = !available || selectedCount !== 6;

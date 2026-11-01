@@ -1,3 +1,4 @@
+import { canApplySettings } from './saved-versions.js';
 import type { MountHandle } from '../app.js';
 import type { FieldData } from '../se/types.js';
 import { liveTotals } from '../scam/live-shared.js';
@@ -24,7 +25,7 @@ function start(key: string) {
         const message = raw as Record<string, unknown>;
         if (message.type === 'hello') { if (mount) sendState(); else link.send({ type: 'needs-config' }); }
         if (message.type === 'config' && seen.accept(message.id)) {
-            if (mount?.scam?.snapshot().busy) { link.send({ type: 'notice', text: 'Wait for the current animation to finish before applying settings.' }); return; }
+            if (mount?.scam && message.reset === true && !canApplySettings(mount.scam.snapshot())) { link.send({ type: 'notice', text: 'Finish the current viewer before applying settings.' }); return; }
             if (!mount || message.reset === true) configure(message, true);
             sendState();
         }
