@@ -30,6 +30,7 @@ const main = node('main', doc.body, '', 'control-room');
 const header = node('header', main);
 node('p', header, 'FAITH / PRIVATE CONTROLS', 'eyebrow');
 node('h1', header, 'Scam Wheel');
+const home = node('a', header, 'All games', 'button-link'); home.href = new URL('../birthday-darts/', location.href).href; home.target = '_blank'; home.rel = 'noopener'; home.setAttribute('aria-label', 'All games (opens a new tab)');
 node('p', header, 'Run the wheel here. Only the wheel goes on stream.', 'intro');
 const badge = node('p', header, 'Connecting...', 'connection'); badge.setAttribute('role', 'status');
 

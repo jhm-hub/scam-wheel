@@ -31,7 +31,7 @@ catch { }
 const library = createVersionLibrary(localStorage, { ...base, scamConfig: JSON.stringify(Wheel.parseScamConfig(base.scamConfig)) });
 let editingId = 'original', dirty = false, libraryError = '';
 try { const current = library.current(); editingId = current.id; base = { ...deskDefaults, ...current.config }; } catch (e) { libraryError = String(e); }
-let settings = Wheel.parseScamConfig(base.scamConfig), mount: MountHandle | undefined, tab = 'round';
+let settings = Wheel.parseScamConfig(base.scamConfig), mount: MountHandle | undefined, tab = new URLSearchParams(location.search).get('panel') === 'settings' ? 'settings' : 'round';
 const shell = doc.createElement('aside');
 shell.id = 'faith-desk';
 doc.body.append(shell);
@@ -49,6 +49,7 @@ if (browserSite || location.protocol === 'http:') {
     browserLink.href = new URL('browser.html', browserSite ?? location.href).href;
     browserLink.target = '_blank'; browserLink.rel = 'noopener';
 }
+if (!stream) { const home = make('a', 'browser-live-link', 'All games', head); home.href = new URL('../birthday-darts/', browserSite ?? 'https://jhm-hub.github.io/scam-wheel/').href; home.target = '_blank'; home.rel = 'noopener'; home.setAttribute('aria-label', 'All games (opens a new tab)'); }
 const tabs = make('nav', 'desk-tabs');
 const panels = new Map<string, HTMLElement>();
 for (const [id, label] of [['round', 'Play'], ['showcase', 'Showcase'], ['settings', 'Settings'], ['stream', 'Stream setup']]) {
