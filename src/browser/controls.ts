@@ -1,3 +1,4 @@
+import {sharedVersionLibrary,rememberSharedLink} from './shared-loader.js';
 import { createVersionLibrary, canApplySettings, VERSIONS_KEY } from './saved-versions.js';
 import type { FieldData } from '../se/types.js';
 import { defaultScamConfig, parseScamConfig } from '../scam/config.js';
@@ -7,6 +8,8 @@ import { connectRoom } from './room.js';
 import { randomKey, validKey, type BrowserCommand } from './protocol.js';
 import { channelName } from './twitch.js';
 
+(async()=>{
+await rememberSharedLink();
 const doc = document;
 function readSaved(key: string): string | null { try { return localStorage.getItem(key); } catch { return null; } }
 function save(key: string, value: string) { try { localStorage.setItem(key, value); } catch { } }
@@ -100,7 +103,7 @@ node('p', more, '!scam bonus 1, !scam pause, !scam resume, !scam demo ID, !scam 
 const settings = node('section', main, '', 'panel');
 node('h2', settings, 'Prizes & game modes');
 node('p', settings, 'Edit and save versions on the Settings page, then choose one here between viewers. All versions use the same permanent OBS source.');
-const library = createVersionLibrary(localStorage, legacyFields());
+const library = await sharedVersionLibrary({create:storage=>createVersionLibrary(storage,legacyFields()),key:VERSIONS_KEY,game:'scam',normalize:value=>({...value,scamConfig:JSON.stringify(parseScamConfig(value.scamConfig))})});
 const versionLabel = node('label', settings, 'Saved version to use', 'field'), versionSelect = node('select', versionLabel); versionSelect.setAttribute('aria-label', 'Saved version');
 function refreshVersions() { try { const current = library.current(); versionSelect.replaceChildren(...library.list().map(v => new Option(v.name, v.id))); versionSelect.value = current.id; } catch (e) { notice.textContent = String(e); } }
 refreshVersions();
@@ -201,3 +204,6 @@ const link = connectRoom({ role: 'controls', key, status(value) {
 render();
 const timer = setInterval(render, 500);
 window.addEventListener('pagehide', () => { clearInterval(timer); link.dispose(); });
+
+window.addEventListener('shared-settings-updated', () => { refreshVersions(); refreshModeNames(); notice.textContent = 'Updated settings ready. Apply saved version before the next viewer.'; });
+})().catch(error => { const message = document.createElement('p'); message.setAttribute('role','alert'); message.textContent = 'Could not load shared settings. ' + String(error) + ' Refresh to retry; saved data is unchanged.'; document.body.prepend(message); });

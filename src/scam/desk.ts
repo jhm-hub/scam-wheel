@@ -1,3 +1,4 @@
+import {sharedVersionLibrary} from '../browser/shared-loader.js';
 import { createVersionLibrary } from '../browser/saved-versions.js';
 import type { MountHandle } from '../app.js';
 import type { ScamConfig } from './config.js';
@@ -17,6 +18,7 @@ declare global {
         faithWheel?: MountHandle;
     }
 }
+(async()=>{
 const doc = document, stream = window.FAITH_STREAM === true;
 const settingsPath = location.pathname.endsWith('/') ? location.pathname + 'scam.html' : location.pathname.replace(/\/index\.html$/, '/scam.html');
 const STORAGE = 'faith-scam-wheel/native/v1:' + settingsPath;
@@ -28,7 +30,7 @@ try {
         base = { ...base, ...JSON.parse(saved) };
 }
 catch { }
-const library = createVersionLibrary(localStorage, { ...base, scamConfig: JSON.stringify(Wheel.parseScamConfig(base.scamConfig)) });
+const library = await sharedVersionLibrary({create: storage => createVersionLibrary(storage, { ...base, scamConfig: JSON.stringify(Wheel.parseScamConfig(base.scamConfig)) }),key:'faith-scam-wheel/saved-versions/v1',game:'scam',normalize: value => ({...value,scamConfig:JSON.stringify(Wheel.parseScamConfig(value.scamConfig))})});
 let editingId = 'original', dirty = false, libraryError = '';
 try { const current = library.current(); editingId = current.id; base = { ...deskDefaults, ...current.config }; } catch (e) { libraryError = String(e); }
 let settings = Wheel.parseScamConfig(base.scamConfig), mount: MountHandle | undefined, tab = new URLSearchParams(location.search).get('panel') === 'settings' ? 'settings' : 'round';
@@ -157,7 +159,7 @@ make('p', 'desk-hint', 'Checked modes can appear on turn three. Weight 2 appears
 const modeFields = settings.modes.map(m => { const row = make('div', 'mode-setting', '', pool); const enabled = input(row, 'IN POOL', '', 'checkbox'); enabled.checked = m.enabled; const name = input(row, 'NAME', m.name); name.maxLength = 44; const weight = input(row, 'WEIGHT', String(m.weight), 'number'); weight.min = '.01'; weight.max = '100'; weight.step = '.01'; const info = Wheel.MODES.find(x => x.id === m.id)!; make('p', 'desk-hint', info.experimental ? 'NEW IDEA - enable only after Faith approves.' : 'Original: ' + info.original, row); return { id: m.id, enabled, name, weight }; });
 const formError = make('p', 'form-error', '', configForm);
 formError.setAttribute('role', 'alert');
-function saveSettings(copy = false) { if (!configForm.reportValidity())
+async function saveSettings(copy = false) { if (!configForm.reportValidity())
     return; const list = (value: string, n: number, min: number) => { const values = value.split(',').map(v => v.trim()); if (values.length !== n || values.some(v => !v || !Number.isFinite(Number(v)) || Number(v) < min || Number(v) > 100000))
     throw new Error('Enter ' + n + ' comma-separated numbers, each at least ' + min + '.'); return values.map(Number); }; try {
     const next: ScamConfig = { ...settings, cash: cashInputs.map(i => Number(i.value)), startingSpins: Number(startInput.value), demoBalance: Number(demoCashInput.value), boost: Number(boostInput.value), flatCash: Number(flatInput.value), angels: list(angelsInput.value, 6, 0), multipliers: list(multInput.value, 10, 1), spinSeconds: Number(duration.value), player: player.value, modes: modeFields.map(f => ({ id: f.id, name: f.name.value.trim(), enabled: f.enabled.checked, weight: Number(f.weight.value) })) };
@@ -170,12 +172,12 @@ function saveSettings(copy = false) { if (!configForm.reportValidity())
         base = { ...base, colorScheme: 'auto', colorPrimary: mainColor.value, colorSecondary: secondaryColor.value };
     colorsDirty = false;
     base.importConfig = '';base.volumeWin=Number(volumeInput.value);
-    save(copy, versionName.value); dirty = false; refreshVersions();
+    await save(copy, versionName.value); dirty = false; refreshVersions();
     remount();
     renderDemos();
     formError.textContent = 'Saved. Practice round ready. Apply from live controls between viewers.';
-    versionNote.textContent = 'Saved in this browser. Your OBS link stays the same.';
-    selectTab('round');
+    versionNote.textContent = library.shared ? 'Saved to your private link. Your OBS link stays the same.' : 'Saved in this browser. Your OBS link stays the same.';
+    selectTab(new URLSearchParams(location.search).has('desk') ? 'settings' : 'round');
 }
 catch (e) {
     formError.textContent = e instanceof Error ? e.message : String(e);
@@ -187,12 +189,12 @@ make('summary', '', 'Import Faith\'s wheel look', importBox);
 make('p', 'desk-hint', 'Paste a saved config code from the supplied wheel. Applies its colors and sound level while keeping this game\'s prizes, arcade text and round center.', importBox);
 const code = make('textarea', '', '', importBox);
 code.placeholder = 'Wheel config code';
-button(importBox, 'Apply wheel look', () => { const decoded = Wheel.decodeSharedConfig(code.value); if (!decoded) {
+button(importBox, 'Apply wheel look', async () => { const decoded = Wheel.decodeSharedConfig(code.value); if (!decoded) {
     formError.textContent = 'That config code could not be read.';
     return;
 } const keys = ['colorScheme', 'colorPrimary', 'colorSecondary', 'colorSliceEven', 'colorSliceOdd', 'colorSliceBorder', 'colorRim', 'colorHub', 'colorHubInner', 'colorPlate', 'colorTitle', 'colorEntry', 'volumeWin', 'volumeTick', 'volumeSeam', 'disableSound', 'disableTickSound', 'disableConfetti', 'gemMatchScheme', 'gemColor']; for (const key of keys)
     if (decoded[key] !== undefined)
-        base[key] = decoded[key]; mainColor.value = String(base.colorPrimary); secondaryColor.value = String(base.colorSecondary); volumeInput.value=String(base.volumeWin??55); colorsDirty = false; save(); remount(); formError.textContent = 'Wheel look applied.'; });
+        base[key] = decoded[key]; mainColor.value = String(base.colorPrimary); secondaryColor.value = String(base.colorSecondary); volumeInput.value=String(base.volumeWin??55); colorsDirty = false; await save(); remount(); formError.textContent = 'Wheel look applied.'; });
 const files = make('div', 'file-actions', '', editor);
 button(files, 'Export settings', () => download('Faith-Scam-Wheel-Settings.json', JSON.stringify({ ...base, gameMode: 'scam', spinCommand: '!scam', wheelCommand: '!scam', scamConfig: JSON.stringify(settings) }, null, 2), 'application/json'));
 const fileInput = make('input', '', '', files);
@@ -209,7 +211,7 @@ fileInput.onchange = async () => { try {
         throw new Error('Use a settings file exported from this wheel.');
     base = { ...base, ...value };
     settings = Wheel.parseScamConfig(base.scamConfig);
-    save();
+    await save();
     cashInputs.forEach((e, i) => e.value = String(settings.cash[i]));
     startInput.value = String(settings.startingSpins);demoCashInput.value=String(settings.demoBalance);volumeInput.value=String(base.volumeWin??55);
     boostInput.value = String(settings.boost);
@@ -298,17 +300,17 @@ const notes = make('details', 'rules-note', '', editor);
 make('summary', '', 'Round rules & scripted surprises', notes);
 make('p', '', 'Two completed regular spins unlock the scam on the next press. Bonus spins never delay it. Multipliers add to a bank; cash is multiplied when the round ends. Totals at $30 or less triple, and totals from $31 to $50 double, as part of the final gag. Fatal Attraction guarantees its first multiplier; Sweet Little Lie uses a fake jackpot board; Lucky-ish always lands on $7 before awarding $77. The rules are intentional and are visible in each demo description.', notes);
 const footer = make('div', 'desk-footer');
-const mute = button(footer, 'Sound on', () => { mount?.scam?.mute(!mount.scam.snapshot().muted); try { save(); } catch (e) { formError.textContent = 'Could not save: ' + String(e); } });
+const mute = button(footer, 'Sound on', async () => { mount?.scam?.mute(!mount.scam.snapshot().muted); try { await save(); } catch (e) { formError.textContent = 'Could not save: ' + String(e); } });
 button(footer, 'Hide controls', () => setHidden(true));
 const reveal = make('button', 'desk-reveal', 'Controls', doc.body);
 reveal.onclick = () => setHidden(false);
 function selectTab(id: string) { tab = id; if (id === 'stream') refreshHostedInstaller(); for (const [key, p] of panels)
     p.hidden = key !== id; tabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === id)); }
-function save(copy = false, name?: string) {
+async function save(copy = false, name?: string) {
     base = { ...base, gameMode: 'scam', spinCommand: '!scam', wheelCommand: '!scam', scamConfig: JSON.stringify(settings), importConfig: '' };
     const currentName = library.list().find(v => v.id === editingId)?.name ?? 'My saved settings';
-    const v = library.save(editingId, name ?? currentName, base, copy); editingId = v.id;
-    localStorage.setItem(STORAGE, JSON.stringify(base));
+    const v = await library.save(editingId, name ?? currentName, base, copy); editingId = v.id;
+    if (!library.shared) localStorage.setItem(STORAGE, JSON.stringify(base));
 }
 function hydrateForm() {
     cashInputs.forEach((e, i) => e.value = String(settings.cash[i]));
@@ -347,3 +349,9 @@ addEventListener('keydown', e => { if ((e.target as HTMLElement)?.closest('input
 renderDemos();
 selectTab(tab);
 remount();
+
+window.addEventListener('shared-settings-before-update', event => { if (dirty) event.preventDefault(); });
+window.addEventListener('shared-settings-discard', () => { dirty = false; });
+window.addEventListener('shared-settings-updated', () => { if (dirty) return; const v = library.current(); editingId = v.id; base = {...deskDefaults, ...v.config}; settings = Wheel.parseScamConfig(base.scamConfig); hydrateForm(); refreshVersions(); renderDemos(); versionNote.textContent = 'Updated from the shared link. Apply from live controls before the next viewer.'; });
+if (library.shared) for (const b of document.querySelectorAll('button')) if (b.textContent === 'Save as new version') b.hidden = true;
+})().catch(error => { const message = document.createElement('p'); message.setAttribute('role','alert'); message.textContent = 'Could not load shared settings. ' + String(error) + ' Refresh to retry; saved data is unchanged.'; document.body.prepend(message); });
