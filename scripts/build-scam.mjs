@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 import * as esbuild from 'esbuild';
-import { readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, rmSync, copyFileSync } from 'node:fs';
 
 export async function buildScamPages() {
+  copyFileSync('assets/Nunito-OFL.txt','dist/Nunito-OFL.txt');
   // Use the browser's URL validation and installer format for the downloadable build too.
   const helper = await esbuild.build({ entryPoints: ['src/hosting.ts'], bundle: true, format: 'esm', write: false });
   const { publishedSiteUrl, hostedInstaller, hostedMonitorInstaller } = await import('data:text/javascript;base64,' + Buffer.from(helper.outputFiles[0].text).toString('base64'));
@@ -26,14 +27,14 @@ export async function buildScamPages() {
   writeFileSync('dist/index.html', html(false));
   writeFileSync('dist/scam.html', html(false));
   writeFileSync('dist/scam-stream.html', html(true));
-  const defaults = { gameMode: 'scam', spinCommand: '!scam', wheelCommand: '!scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', fontFamily: '', enableCommands: true, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubSize: 30, volumeWin: 55 };
+  const defaults = { gameMode: 'scam', spinCommand: '!scam', wheelCommand: '!scam', colorScheme: 'auto', colorPrimary: '#d994bb', colorSecondary: '#c1a9e6', fontFamily: 'Nunito', enableCommands: true, hubMode: 'text', hubText: 'SCAM\nWHEEL', hubSize: 30, volumeWin: 55 };
   const code = Buffer.from(JSON.stringify(defaults)).toString('base64url');
   await esbuild.build({ entryPoints: ['src/browser/controls.ts'], bundle: true, format: 'iife', outfile: 'dist/browser-controls.js', target: 'es2022' });
   await esbuild.build({ entryPoints: ['src/browser/viewer.ts'], bundle: true, format: 'iife', outfile: 'dist/browser-viewer.js', target: 'es2022' });
   const revision = (name) => createHash('sha256').update(readFileSync('dist/' + name)).digest('hex').slice(0, 12);
   const browserCss = readFileSync('src/browser/controls.css', 'utf8');
-  const browserFont = readFileSync('assets/Bungee-Regular.ttf').toString('base64');
-  writeFileSync('dist/browser.html', '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Scam Wheel - Private Browser Controls</title><style>@font-face{font-family:"Scam Arcade";src:url(data:font/ttf;base64,' + browserFont + ')}' + browserCss + '</style></head><body><script src="./browser-controls.js?v=' + revision('browser-controls.js') + '"></script></body></html>');
+  const browserFont = readFileSync('assets/Nunito.ttf').toString('base64');
+  writeFileSync('dist/browser.html', '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Scam Wheel - Private Browser Controls</title><style>@font-face{font-family:"Nunito";src:url(data:font/ttf;base64,' + browserFont + ');font-weight:200 1000;font-style:normal;font-display:swap}' + browserCss + '</style></head><body><script src="./browser-controls.js?v=' + revision('browser-controls.js') + '"></script></body></html>');
   writeFileSync('dist/browser-wheel.html', '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Scam Wheel - Live Browser Wheel</title><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body><script src="./wheel.js?v=' + revision('wheel.js') + '"></script><script src="./browser-viewer.js?v=' + revision('browser-viewer.js') + '"></script></body></html>');
   writeFileSync('dist/StreamElements-HTML.txt', '<!doctype html><html><head><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body><script>window.WHEEL_CONFIG=' + JSON.stringify(code) + ';</script><script>' + assets.wheel.replace(/<\/script/gi, '<\\/script') + '</script></body></html>');
   if (siteUrl) {

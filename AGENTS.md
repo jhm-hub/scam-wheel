@@ -32,3 +32,7 @@ TypeScript StreamElements custom-widget wheel. Single esbuild bundle (`src/` -> 
 
 - ASCII only in code, comments, UI strings, and commit messages. No emdash, endash, ellipsis, arrows, curly quotes, or other unicode symbols. Use `-`, `--`, `->`.
 - No separator or banner comments. Structure with functions, modules, and blank lines.
+
+## Wheel font
+
+Nunito is Faith's standard font for every wheel game (November 15, 2026). Use the bundled variable font and its OFL license for defaults, labels, results and fallbacks. Preserve saved amounts, rules and intentional custom font choices.

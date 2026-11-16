@@ -20,8 +20,8 @@ function buildCss() {
   const chrome = readFileSync("dist/chrome.css", "utf8");
   const wheel = readFileSync("src/styles/wheel.css", "utf8");
   const scam = readFileSync("src/styles/scam.css", "utf8") + "\n" + readFileSync("src/styles/activation.css", "utf8");
-  const font = readFileSync("assets/Bungee-Regular.ttf").toString("base64");
-  return chrome + "\n" + wheel + "\n" + "@font-face{font-family:'Scam Arcade';src:url(data:font/ttf;base64," + font + ") format('truetype');font-display:swap;}\n" + scam;
+  const font = readFileSync("assets/Nunito.ttf").toString("base64");
+  return chrome + "\n" + wheel + "\n" + "@font-face{font-family:'Nunito';src:url(data:font/ttf;base64," + font + ") format('truetype');font-weight:200 1000;font-style:normal;font-display:swap;}\n" + scam;
 }
 
 const cssDefine = () => ({ __INLINE_CSS__: JSON.stringify(buildCss()) });

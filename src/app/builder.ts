@@ -16,7 +16,7 @@ const CONFETTI_COLORS: [string, string, string] = ["#ffc3ce", "#f8acbb", "#ffe3c
 // or when there is no document head (jsdom without a head, headless probes).
 function ensureFontLoaded(doc: Document, family: string): void {
   const name = family.trim();
-  if (name.length === 0 || !doc.head) return;
+  if (name.length === 0 || name.toLowerCase() === "nunito" || !doc.head) return;
   const id = "wheel-font-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   if (doc.getElementById(id)) return;
   const link = doc.createElement("link");
