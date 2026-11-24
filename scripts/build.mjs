@@ -1,7 +1,7 @@
 import { buildScamPages } from "./build-scam.mjs";
 import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, cpSync } from "node:fs";
 import { genFields } from "./gen-fields.mjs";
 
 const watch = process.argv.includes("--watch");
@@ -47,6 +47,7 @@ if (serve) {
 } else {
   await esbuild.build(opts);
   await buildScamPages();
+  cpSync("demos", "dist/demos", { recursive: true });
   writeFileSync("dist/wheel.html", demoHtml());
   // Keep ordinary-wheel config hashes when following the legacy demo link.
   writeFileSync(
