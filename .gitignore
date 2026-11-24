@@ -8,7 +8,7 @@ scratchpad/
 docs/superpowers/
 
 # Node / build
-node_modules/
+node_modules
 dist/
 *.log
 
