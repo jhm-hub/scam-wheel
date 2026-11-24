@@ -41,7 +41,7 @@
 @media(max-width:680px){.selection{order:-3;width:100%;margin-top:10px}.stakes{order:-2;margin:8px 0 0}.stakes button{padding:6px}.stage{order:0}.selection .library{display:none}#stakes-summary{order:-1;text-align:center;margin:6px 0 0}.stage canvas{height:min(41vh,420px)}.rulebox{margin-top:0}.autoplay{margin-top:13px}}
 
 #ledger small{display:block;font-size:11px;font-weight:600;line-height:1.4;color:#bca6c7;margin-top:4px}
-@media(max-width:680px){.stage{position:sticky;top:0;z-index:2;background:#21142f;border-radius:0}.viewer .stage{background:none;position:relative;z-index:auto}}
+@media(max-width:680px){.stage{position:relative;top:auto;z-index:2;background:#21142f;border-radius:0}.viewer .stage{background:none;position:relative;z-index:auto}}
 
 /* A taller wheel keeps the scene readable in a narrow browser pane. */
 @media(max-width:680px){
