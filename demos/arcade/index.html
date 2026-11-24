@@ -38,6 +38,12 @@
 .modes{grid-template-columns:1fr 1fr;gap:7px}.mode{gap:7px;font-size:14px;padding:10px 9px;min-height:67px}.mode small{font-size:11px;line-height:1.3}.mode-icon{flex-shrink:0;width:26px;font-size:28px}.rulebox p{min-height:46px}.mode.active{box-shadow:inset 3px 0 #f2aed1}
 @media(max-width:680px){.modes{margin-top:9px}.mode{min-height:52px;font-size:14px}.mode small{font-size:10px}.stage canvas{height:min(43vh,440px)}.rulebox p{min-height:0}}
 
+.selection>label{display:block;font-size:12px;letter-spacing:1.5px;font-weight:900;color:#dac3ee;margin-bottom:7px}select{font:inherit;color:#fff1e5;background:#3b284d;border:1px solid #b88bbf;border-radius:9px;padding:11px;width:100%;font-weight:800}.library{margin-top:9px;padding-top:0;border-top:0}.library .modes{max-height:260px;overflow:auto;margin-top:10px}.library .mode{min-height:42px;font-size:13px}.stakes{display:flex;gap:8px;margin-top:14px}.stakes button{flex:1;background:#33213f;border:1px solid #74547b;border-radius:8px;font-weight:900;padding:9px}.stakes button[aria-pressed=true]{background:#b6a0d9;color:#2b1735;border-color:#f3deff}.stakes-summary,#stakes-summary{margin:8px 0}.autoplay{padding:9px 12px;width:100%;border-radius:9px;background:#493153;border:1px solid #846092;font-weight:900;margin-top:15px}.secondary{margin-top:8px}.theme-label{display:block;font-size:13px;color:#d6bedc;margin:12px 0}.theme-label select{margin-top:6px}.theme-label input[type=range]{width:100%}.colour-fields{display:flex;gap:14px}.colour-fields label{font-size:12px;color:#d6bedc;flex:1}.colour-fields input{display:block;width:100%;height:34px;margin-top:7px;padding:2px;border:1px solid #846092;background:#392447;border-radius:6px}.spin{background:linear-gradient(120deg,var(--wheel-pink,#e68cb5),var(--wheel-lilac,#bca3e6));color:#fff2dc;text-shadow:0 1px 3px #512545}.spin:not(:disabled):hover{filter:brightness(1.1);background:linear-gradient(120deg,var(--wheel-pink,#e68cb5),var(--wheel-lilac,#bca3e6))}.spin span{border-color:#ffe4d277;color:#fff2dc}.selection{margin-top:16px}.library summary{font-size:12px}.rulebox{margin-top:13px}.readout strong{font-size:28px}.rulebox p{font-size:15px;min-height:0}
+@media(max-width:680px){.selection{order:-3;width:100%;margin-top:10px}.stakes{order:-2;margin:8px 0 0}.stakes button{padding:6px}.stage{order:0}.selection .library{display:none}#stakes-summary{order:-1;text-align:center;margin:6px 0 0}.stage canvas{height:min(41vh,420px)}.rulebox{margin-top:0}.autoplay{margin-top:13px}}
+
+#ledger small{display:block;font-size:11px;font-weight:600;line-height:1.4;color:#bca6c7;margin-top:4px}
+@media(max-width:680px){.stage{position:sticky;top:0;z-index:2;background:#21142f;border-radius:0}.viewer .stage{background:none;position:relative;z-index:auto}}
+
 /* Nunito OFL
 Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
 
@@ -138,22 +144,343 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 <section class="stage" aria-label="Scam wheel"><canvas id="game" width="1000" height="920" aria-label="Faith's scam wheel"></canvas><div class="stage-mark" aria-hidden="true"><span>FAITH&#8217;S ARCADE</span><span>SCAM COLLECTION</span></div></section>
 <aside class="desk">
 <header><p class="eyebrow">FAITH&#8217;S ARCADE</p><h1>Scam Wheel</h1><p class="intro">Pick a game. Give it a spin.</p></header>
-<nav class="modes" aria-label="Choose a scam"><button class="mode active" data-mode="dice" aria-pressed="true"><span class="mode-icon">&#9860;</span><span>Dice Boost<small>Extra spins &#183; stacked boosts</small></span></button><button class="mode" data-mode="roulette" aria-pressed="false"><span class="mode-icon chamber-icon">&#10047;</span><span>Russian Roulette<small>Keep going &#183; find the exit</small></span></button><button class="mode" data-mode="rent" aria-pressed="false"><span class="mode-icon house-icon" aria-hidden="true"></span><span>Rent Free<small>Build one. Pay the whole street.</small></span></button><button class="mode" data-mode="gumball" aria-pressed="false"><span class="mode-icon candy-icon" aria-hidden="true"></span><span>Gumball Ransom<small>Collect colours. Charge the sets.</small></span></button></nav>
+<div class="selection"><label for="mode-select">CHOOSE A SCAM</label><select id="mode-select"></select><details class="library"><summary>Explore all 20 scams</summary><nav id="mode-cards" class="modes" aria-label="Choose a scam"></nav></details></div>
+<div class="stakes" aria-label="Choose stakes"><button id="stakes-low" aria-pressed="true">Low stakes</button><button id="stakes-high" aria-pressed="false">High stakes</button></div><p id="stakes-summary" class="fine"></p>
 <div class="rulebox"><span class="eyebrow" id="mode-tag"></span><p id="rule"></p></div>
 <div class="readout"><div><span>ROUND TOTAL</span><strong id="total">$0</strong></div><div><span id="power-label">NEXT CASH</span><strong id="power">&#215;1</strong></div></div>
 <div class="progress" id="progress"><span id="step1">1</span><i></i><span id="step2">2</span><i></i><span id="step3">SCAM</span></div>
 <p class="status" id="status" role="status" aria-live="polite">Ready when you are.</p>
 <button class="spin" id="spin">Spin <span>SPACE</span></button>
-<div class="secondary"><button id="showcase">&#9654; Play showcase</button><button id="reset" aria-label="Reset round">&#8635; Reset</button></div>
+<button id="inspect-result" class="autoplay" hidden>See final wheel</button><button id="autoplay" class="autoplay">Play random round</button><div class="secondary"><button id="showcase">&#9654; Play showcase</button><button id="reset" aria-label="Reset round">&#8635; Reset</button></div>
 <p id="demo-note" class="demo-note">Showcase plays a scripted bonus chain automatically. Spin gives random results.</p>
 <label class="skip"><input id="quick" type="checkbox"> Jump straight to the scam</label>
 <div class="utilities"><button id="sound" aria-pressed="true">Sound on</button><button id="viewer">Open clean view</button></div>
-<details id="settings"><summary>Amounts & round settings</summary><div class="fields"><label>Cash slice<input id="cash" type="number" min="1" max="1000" step="1" value="10"></label><label>Bonus cash<input id="bonus" type="number" min="1" max="1000" step="1" value="2"></label><label>Starting spins<input id="spins" type="number" min="1" max="10" step="1" value="3"></label></div><p class="fine" id="mode-settings-note"></p><p class="fine">Apply starts a fresh round. Boosts stack up to &#215;64. Russian Roulette multiplies the whole bill, including the opening spins. Rounds have a 60-landing limit.</p><button id="apply">Apply settings</button><p id="settings-error" role="alert"></p></details>
+<details id="settings"><summary>Amounts & round settings</summary><div class="fields"><label>Base cash<input id="cash" type="number" min="1" max="1000" step="1" value="10"></label><label>Bonus cash<input id="bonus" type="number" min="1" max="1000" step="1" value="2"></label><label>Base spins<input id="spins" type="number" min="1" max="10" step="1" value="3"></label></div><p class="fine" id="mode-settings-note"></p><p class="fine">Apply starts a fresh round in the selected stakes profile. Both profiles save separately. All rounds have a 60-landing safety limit.</p><button id="apply">Apply settings</button><p id="settings-error" role="alert"></p></details>
+<details id="appearance"><summary>Colours & saved settings</summary><label class="theme-label">Base theme<select id="theme-preset"><option value="sweet">Sweet Talk</option><option value="mint">Mint Arcade</option><option value="royal">Royal Lilac</option><option value="custom">Custom colours</option></select></label><div class="colour-fields"><label>Pink<input type="color" id="theme-pink"></label><label>Lilac<input type="color" id="theme-lilac"></label><label>Accent<input type="color" id="theme-gold"></label></div><p class="fine">The normal wheel uses these colours. Scams have their own scene palettes.</p><label class="theme-label">Sound volume<input type="range" id="volume" min="0" max="100" step="1" value="70"></label><div class="secondary"><button id="export-settings">Save settings file</button><button id="import-settings">Load file</button><input type="file" id="settings-file" accept="application/json,.json" hidden></div><p class="fine" id="save-status" role="status">Settings save in this browser.</p></details>
 <details id="history"><summary>Round history <span id="history-count">0</span></summary><ol id="ledger"></ol></details>
 <footer>Built on Landaire&#8217;s wheel logic &#183; Faith&#8217;s demo collection</footer>
-</aside></main><script>(() => {
-  // src/model.mjs
+</aside></main><script>"use strict";
+(() => {
+  // arcade/src/extended.mjs
+  var def = (name, tag, rule, art, colors, showcase) => ({ name, tag, rule, short: rule, art, colors, showcase });
+  var EXTRA_MODES = {
+    baggage: def("Heavy Baggage", "PACK LIGHT. PAY HEAVY.", "Collect parcels. All their weight ships at the heaviest parcel's rate.", "parcel", ["#9b79b0", "#b9879b", "#edc88f"], [0, 1, 4, 2]),
+    auction: def("Going Twice", "SOLD. AND SOLD AGAIN.", "Raise the bids. At the hammer, the TWO highest bids join your bill.", "gavel", ["#9e6899", "#bd8c7e", "#ffe0a0"], [0, 3, 2, 5]),
+    race: def("Photo Finish", "YOU BOUGHT THE WHOLE RACE.", "Move the drawn pony. First to the finish ends the race. Pay every pony's distance.", "horse", ["#8d80b8", "#b57d9e", "#c9ead6"], [0, 4, 2, 0, 1, 0]),
+    stamps: def("Stamp Duty", "EVERY LINE HAS A PRICE.", "Stamp your square. Each completed row or column charges its value again, once.", "stamp", ["#9281ba", "#bd8c9a", "#ffe8b8"], [0, 1, 2, 4, 7, 8]),
+    bubble: def("Bubble Trouble", "THE BIGGER THE POP...", "Pump the bubble. Every pop adds a bonus; spare air fills the next, bigger bubble.", "bubble", ["#b07ab1", "#7aada9", "#fbd0e6"], [3, 2, 3, 3, 1, 3]),
+    seats: def("Double Booked", "SOMEONE'S IN YOUR SEAT.", "Seat a guest. Occupied seats push guests along. Pay a fee for each guest moved.", "chair", ["#955f93", "#b07ba5", "#e9c78e"], [0, 0, 0, 0, 4, 0]),
+    blocks: def("Stack Attack", "THAT LINE COSTS EXTRA.", "Drop the blocks. Each block costs cash; complete rows clear and add a line fee.", "blocks", ["#8c72b9", "#ad72aa", "#a7e2d4"], [0, 1, 2, 3, 0, 1]),
+    charms: def("Charm Offensive", "COLLECT THEM. REGRET IT.", "Buy a charm. Every duplicate raises the price of ALL copies of that charm.", "charm", ["#b77b98", "#9b81bc", "#ffe3a5"], [0, 1, 0, 2, 0, 1]),
+    toll: def("Toll Troll", "EVERY ROAD LEADS TO FEES.", "Move your car. Pay every toll gate you pass, not just where you stop.", "car", ["#7e91ac", "#ac7ca1", "#ffe0a0"], [2, 3, 0, 3, 2]),
+    credit: def("Credit Crunch", "YOUR LIMIT IS A SUGGESTION.", "Keep charging until the card declines. Every dollar over the limit is charged twice.", "card", ["#8b7db9", "#b77c9f", "#ffd98c"], [2, 1, 2, 1]),
+    map: def("Wrong Turn", "THE SCENIC ROUTE COSTS MORE.", "Follow the compass to a priced tile. Wrapping off the map adds a detour fee.", "compass", ["#8a9e93", "#b3918b", "#ffe5b3"], [0, 1, 1, 1, 2, 3]),
+    plinko: def("Plinko Princess", "A LITTLE DROP. A BIG BILL.", "Spin for a launch gate. Follow the marble; the lane it reaches joins your bill.", "marble", ["#8279b8", "#b176a6", "#ffe4af"], [2, 0, 4, 3]),
+    encore: def("Encore Please", "ONE MORE SONG. ONE MORE BILL.", "Match the next note: C, E, G. Every note costs cash; each melody adds an encore fee.", "note", ["#9172b5", "#bd75a2", "#f9dba5"], [0, 1, 2, 3, 4, 5]),
+    bowling: def("Royal Roll", "A STRIKE AGAINST YOUR WALLET.", "Knock down priced pins. Clear the rack for a strike fee, then a fresh rack appears.", "pin", ["#9d709e", "#a192bf", "#ffe7b8"], [0, 1, 4, 2]),
+    tower: def("Tower Trouble", "YOU'RE PAYING FOR THE OFFCUTS.", "Stack a floor. Overhang falls away and costs extra. Stop when the tower falls or spins end.", "tower", ["#8f85b8", "#bb7f99", "#d3eed9"], [1, 3, 0, 2, 5]),
+    boss: def("Boss Bill", "THE BOSS DROPS YOUR BILL.", "Attack the piggy boss. Heal landings prolong the fight. Defeat it to collect the bounty bill.", "pig", ["#ae7295", "#8d78b5", "#ffdca0"], [2, 6, 2, 1, 2, 2])
+  };
+  var isExtra = (mode) => !!EXTRA_MODES[mode];
+  var sum = (a) => a.reduce((n, v) => n + v, 0);
+  var cash = (s, n = 1) => Math.round(s.prices.cash * n);
+  var item = (label, sub, value, extra = {}) => ({ kind: "arcade", label, sub, value, ...extra });
+  function startExtra(s) {
+    const n = s.prices.spins;
+    const data = { baggage: { weights: [], weight: 0, rate: 0 }, auction: { bids: [] }, race: { distance: [0, 0, 0], finish: n + 3, winner: null }, stamps: { marks: Array(9).fill(0), lines: [] }, bubble: { air: 0, capacity: 6, pops: 0 }, seats: { occupied: Array(6).fill(false), moves: 0, standing: 0 }, blocks: { heights: Array(4).fill(0), lines: 0 }, charms: { counts: [0, 0, 0] }, toll: { position: 0, travel: 0, gates: 0 }, credit: { spent: 0, limit: cash(s, n * 3), over: 0 }, map: { x: 1, y: 1, path: [4], detours: 0 }, plinko: { drops: [], path: [] }, encore: { note: 0, songs: 0, notes: [] }, bowling: { pins: Array(10).fill(true), racks: 0 }, tower: { width: 8, x: 0, floors: [], waste: 0 }, boss: { hp: n * 3 + 3, max: n * 3 + 3, hits: 0, heals: 0 } }[s.mode];
+    const extra = { baggage: 1, auction: 1, stamps: 3, bubble: 3, seats: 3, blocks: 3, charms: 3, toll: 2, map: 3, plinko: 1, encore: 3, bowling: 1, tower: 3 };
+    return { data, spins: Object.hasOwn(extra, s.mode) ? n + extra[s.mode] : null };
+  }
+  function extraBoard(s) {
+    const d = s.data;
+    switch (s.mode) {
+      case "baggage":
+        return [1, 2, 3, 2, 5, 4].map((v) => item(v + " KG", "PARCEL", v));
+      case "auction":
+        return [1, 2, 3, 4, 6, 8].map((v) => item("$" + cash(s, v), "BID", cash(s, v)));
+      case "race":
+        return Array.from({ length: 6 }, (_, i) => item(["ROSE", "LILAC", "MINT"][i % 3], "+" + (i < 3 ? 2 : 1) + " STEPS", i < 3 ? 2 : 1, { runner: i % 3 }));
+      case "stamps":
+        return Array.from({ length: 9 }, (_, i) => item(String(i + 1), "$" + cash(s), cash(s), { cell: i }));
+      case "bubble":
+        return [1, 2, 3, 4, 2, 3].map((v) => item("+" + v, "AIR", v));
+      case "seats":
+        return Array.from({ length: 6 }, (_, i) => item("SEAT " + (i + 1), d.occupied[i] ? "OCCUPIED" : "OPEN", cash(s), { seat: i }));
+      case "blocks":
+        return Array.from({ length: 8 }, (_, i) => item("COL " + (i % 4 + 1), (i < 4 ? "2" : "1") + " BLOCKS", i < 4 ? 2 : 1, { column: i % 4 }));
+      case "charms":
+        return Array.from({ length: 6 }, (_, i) => item(["HEART", "MOON", "STAR"][i % 3], "CHARM", 1, { charm: i % 3 }));
+      case "toll":
+        return [1, 2, 3, 4, 2, 3].map((v) => item("+" + v, "MOVE", v));
+      case "credit":
+        return [1, 2, 3, 1, 2, 3].map((v) => item("$" + cash(s, v), "CHARGE", cash(s, v)));
+      case "map":
+        return ["NORTH", "EAST", "SOUTH", "WEST"].map((v, i) => item(v, "MOVE", 1, { direction: i }));
+      case "plinko":
+        return Array.from({ length: 6 }, (_, i) => item("GATE " + (i + 1), "DROP", 1, { gate: i }));
+      case "encore":
+        return Array.from({ length: 6 }, (_, i) => item(["C", "E", "G"][i % 3], "NOTE", cash(s), { note: i % 3 }));
+      case "bowling":
+        return ["LEFT", "RIGHT", "CENTRE", "CURVE", "STRIKE", "GUTTER"].map((v, i) => item(v, "BOWL", 1, { aim: i }));
+      case "tower":
+        return [[0, 0], [1, -1], [1, 1], [2, -1], [2, 1], [3, -1], [3, 1], [0, 0]].map(([v, dir]) => item(v === 0 ? "CENTRE" : (dir < 0 ? "LEFT " : "RIGHT ") + v, "STACK", v, { dir }));
+      case "boss":
+        return [1, 2, 3, 1, 2, 3, -2, -2].map((v) => item(v > 0 ? "HIT " + v : "HEAL 2", v > 0 ? "DAMAGE" : "UH OH", Math.abs(v), { heal: v < 0 }));
+    }
+  }
+  function landExtra(s, item2, index, rng = Math.random) {
+    const d = structuredClone(s.data), before = structuredClone(d), c = s.prices.cash, b = s.prices.bonus, entry = { headline: "", detail: "", amount: 0, lines: [] };
+    let spins = s.spins === null ? null : s.spins - 1, complete = spins === 0;
+    const add = (label, value) => {
+      entry.lines.push({ label, value });
+      entry.amount += value;
+    };
+    switch (s.mode) {
+      case "baggage": {
+        d.weights.push(item2.value);
+        d.weight += item2.value;
+        d.rate = Math.max(d.rate, item2.value);
+        entry.headline = item2.value + " KG PARCEL";
+        entry.detail = d.weight + " kg packed. Rate now $" + d.rate * c + " / kg.";
+        if (complete) {
+          add(d.weight + " kg at $" + d.rate * c + " / kg", d.weight * d.rate * c);
+          entry.headline = "EVERY PARCEL PAYS THE HEAVY RATE";
+        }
+        break;
+      }
+      case "auction": {
+        d.bids.push(item2.value);
+        entry.headline = "BID $" + item2.value;
+        entry.detail = "The two highest bids will both be charged.";
+        if (complete) {
+          const bids = [...d.bids].sort((a, b2) => b2 - a).slice(0, 2);
+          bids.forEach((v, i) => add(i === 0 ? "Winning bid" : "Runner-up bid", v));
+          entry.headline = "GOING TWICE. PAYING TWICE.";
+        }
+        break;
+      }
+      case "race": {
+        const moved = Math.min(item2.value, d.finish - d.distance[item2.runner]);
+        d.distance[item2.runner] += moved;
+        entry.headline = ["ROSE", "LILAC", "MINT"][item2.runner] + " +" + moved;
+        entry.detail = "First to " + d.finish + " ends the race. Every pony's distance counts.";
+        if (d.distance[item2.runner] >= d.finish) {
+          complete = true;
+          d.winner = item2.runner;
+          d.distance.forEach((v, i) => add(["Rose", "Lilac", "Mint"][i] + ": " + v + " steps", v * c));
+          entry.headline = "PHOTO FINISH - ALL THREE BILLS";
+        }
+        break;
+      }
+      case "stamps": {
+        d.marks[index] += c;
+        add("Stamp " + (index + 1), c);
+        const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8]];
+        lines.forEach((line, i) => {
+          if (line.every((v) => d.marks[v] > 0) && !d.lines.includes(i)) {
+            d.lines.push(i);
+            add((i < 3 ? "Row " + (i + 1) : "Column " + (i - 2)) + " duty", sum(line.map((v) => d.marks[v])));
+          }
+        });
+        entry.headline = entry.lines.length > 1 ? "LINE COMPLETE. DUTY ADDED." : "STAMP " + (index + 1);
+        entry.detail = "A full row or column is charged once more.";
+        break;
+      }
+      case "bubble": {
+        d.air += item2.value;
+        add(item2.value + " units of air", item2.value * c);
+        entry.headline = "+" + item2.value + " AIR";
+        while (d.air >= d.capacity) {
+          d.air -= d.capacity;
+          d.pops++;
+          add("Pop " + d.pops + " bonus", c * (3 + d.pops));
+          d.capacity += 2;
+          entry.headline = "POP! BONUS ON THE BILL";
+        }
+        entry.detail = d.air + " / " + d.capacity + " air in the next bubble.";
+        break;
+      }
+      case "seats": {
+        let seat = index, moved = [];
+        while (d.occupied[seat] && moved.length < 6) {
+          moved.push(seat);
+          seat = (seat + 1) % 6;
+        }
+        d.occupied[seat] = true;
+        d.moves += moved.length;
+        if (moved.length === 6) d.standing++;
+        entry.moved = moved;
+        entry.seat = seat;
+        add("New guest", c);
+        if (moved.length) add(moved.length + " displaced guests", moved.length * b);
+        entry.headline = moved.length ? "MAKE ROOM. PAY THE MOVING FEES." : "GUEST SEATED";
+        entry.detail = moved.length === 6 ? "Full house: " + d.standing + " standing-room guest" + (d.standing === 1 ? "" : "s") + "." : "Seat " + (index + 1) + " booked. " + moved.length + " guests moved.";
+        break;
+      }
+      case "blocks": {
+        d.heights[item2.column] += item2.value;
+        add(item2.value + " blocks", item2.value * c);
+        const rows = Math.min(...d.heights);
+        if (rows) {
+          d.heights = d.heights.map((v) => v - rows);
+          d.lines += rows;
+          add(rows + " cleared rows", rows * c * 5);
+        }
+        entry.cleared = rows;
+        if (Math.max(...d.heights) >= 10) {
+          complete = true;
+          add("Overflow cleanup", b * 10);
+        }
+        entry.headline = rows ? "LINE CLEAR - EXTRA CHARGE" : "BLOCKS LANDED";
+        entry.detail = "Column " + (item2.column + 1) + ". " + d.lines + " rows cleared.";
+        break;
+      }
+      case "charms": {
+        const k = item2.charm, old = d.counts[k];
+        d.counts[k]++;
+        const price = c * (k + 1);
+        add(["Heart", "Moon", "Star"][k] + " repriced collection", (d.counts[k] ** 2 - old ** 2) * price);
+        entry.headline = old ? "EVERY COPY COSTS MORE" : "FIRST CHARM";
+        entry.detail = d.counts[k] + " copies x $" + d.counts[k] * price + " = $" + d.counts[k] ** 2 * price + " for this charm.";
+        break;
+      }
+      case "toll": {
+        entry.stops = [];
+        for (let step = 0; step < item2.value; step++) {
+          d.position = (d.position + 1) % 12;
+          d.travel++;
+          entry.stops.push(d.position);
+          if (d.position % 3 === 0) {
+            const gate = d.position === 0 ? 4 : d.position / 3;
+            d.gates++;
+            add("Toll gate " + gate, c * gate);
+          }
+        }
+        entry.headline = entry.amount ? "TOLL COLLECTED" : "CLEAR ROAD... FOR NOW";
+        entry.detail = "Moved " + item2.value + " spaces. " + d.gates + " gates charged so far.";
+        break;
+      }
+      case "credit": {
+        d.spent += item2.value;
+        add("Card purchase", item2.value);
+        if (d.spent > d.limit) {
+          d.over = d.spent - d.limit;
+          add("Over-limit surcharge", d.over);
+          complete = true;
+        }
+        entry.headline = complete ? "DECLINED. THE OVERDRAFT STILL COUNTS." : "APPROVED...";
+        entry.detail = "$" + d.spent + " spent / $" + d.limit + " limit" + (complete ? ". Excess $" + d.over + " charged again." : ".");
+        break;
+      }
+      case "map": {
+        const [dx, dy] = [[0, -1], [1, 0], [0, 1], [-1, 0]][item2.direction], x = d.x + dx, y = d.y + dy, wrap = x < 0 || x > 2 || y < 0 || y > 2;
+        d.x = (x + 3) % 3;
+        d.y = (y + 3) % 3;
+        const pos = d.y * 3 + d.x;
+        d.path.push(pos);
+        add("Tile " + (pos + 1), c * [1, 2, 1, 3, 1, 2, 2, 3, 4][pos]);
+        if (wrap) {
+          d.detours++;
+          add("Detour fee", c * 2);
+        }
+        entry.wrap = wrap;
+        entry.headline = wrap ? "WRONG TURN. DETOUR CHARGE." : "TREASURE FOUND";
+        entry.detail = "Tile " + (pos + 1) + ". " + d.detours + " detours so far.";
+        break;
+      }
+      case "plinko": {
+        let col = Math.min(4, item2.gate), path = [col];
+        for (let j = 0; j < 6; j++) {
+          const dir = s.scripted ? [1, -1, 1, -1, -1, 1][j] : rng() < 0.5 ? -1 : 1;
+          col = Math.max(0, Math.min(4, col + dir));
+          path.push(col);
+        }
+        const factors = [1, 3, 8, 3, 1];
+        d.path = path;
+        d.drops.push(col);
+        add("Lane " + (col + 1), c * factors[col]);
+        entry.headline = col === 2 ? "CENTRE LANE JACKPOT" : "MARBLE LANDED";
+        entry.detail = "Gate " + (item2.gate + 1) + " to lane " + (col + 1) + ". Follow the bounce.";
+        break;
+      }
+      case "encore": {
+        const hit = item2.note === d.note;
+        d.notes.push(item2.note);
+        add("Note played", c);
+        if (hit) d.note++;
+        if (d.note === 3) {
+          d.songs++;
+          d.note = 0;
+          add("Encore " + d.songs, c * 8);
+        }
+        entry.hit = hit;
+        entry.headline = entry.lines.length > 1 ? "ENCORE! PLAY IT AGAIN." : hit ? "RIGHT NOTE" : "SOUR NOTE. STILL CHARGED.";
+        entry.detail = "Next note: " + ["C", "E", "G"][d.note] + ". " + d.songs + " melodies charged.";
+        break;
+      }
+      case "bowling": {
+        const hits = [[0, 1, 3, 6], [0, 2, 5, 9], [0, 1, 2, 4, 7, 8], [2, 4, 5, 8, 9], Array.from({ length: 10 }, (_, i) => i), []][item2.aim];
+        const fallen = hits.filter((i) => d.pins[i]);
+        fallen.forEach((i) => d.pins[i] = false);
+        entry.fallen = fallen;
+        add(fallen.length + " pins", fallen.length * c);
+        if (d.pins.every((v) => !v)) {
+          d.racks++;
+          add("Rack-clear fee", c * 5);
+          entry.strike = true;
+          if (!complete) d.pins = Array(10).fill(true);
+        }
+        entry.headline = entry.strike ? "RACK CLEARED. STRIKE FEE." : fallen.length ? fallen.length + " PINS DOWN" : "GUTTER. TRY AGAIN.";
+        entry.detail = d.racks + " racks cleared. " + d.pins.filter(Boolean).length + " pins standing.";
+        break;
+      }
+      case "tower": {
+        const cut = Math.min(d.width, item2.value), remaining = d.width - cut;
+        d.waste += cut;
+        if (item2.dir > 0) d.x += cut;
+        d.width = remaining;
+        d.floors.push({ x: d.x, width: remaining, cut, dir: item2.dir });
+        add("Floor: " + remaining + " blocks", remaining * c);
+        if (cut) add("Overhang cleanup: " + cut, cut * b);
+        if (remaining === 0) complete = true;
+        entry.headline = remaining === 0 ? "TOWER DOWN. CLEANUP IS EXTRA." : cut ? "OVERHANG BILLED" : "PERFECT FIT";
+        entry.detail = remaining + " blocks wide. " + d.waste + " offcuts charged.";
+        break;
+      }
+      case "boss": {
+        if (item2.heal) {
+          d.hp = Math.min(d.max, d.hp + item2.value);
+          entry.healed = d.hp - before.hp;
+          d.heals++;
+          add("Boss recovery fee", b * 2);
+          entry.headline = entry.healed ? "THE BOSS HEALS. YOU PAY." : "FULL HEALTH. RECOVERY FEE ANYWAY.";
+        } else {
+          d.hp = Math.max(0, d.hp - item2.value);
+          d.hits++;
+          add(item2.value + " damage", item2.value * c);
+          entry.headline = item2.value === 3 ? "CRITICAL HIT" : "BOSS HIT";
+        }
+        if (d.hp === 0) {
+          complete = true;
+          add("Boss bounty", c * 5);
+          entry.headline = "BOSS DEFEATED. BOUNTY BILLED.";
+        }
+        entry.detail = d.hp + " / " + d.max + " HP. " + d.heals + " heals.";
+        break;
+      }
+    }
+    return { data: d, spins, complete, entry: { ...entry, fx: { mode: s.mode, before, after: d, item: item2, index }, label: entry.headline } };
+  }
+  function extraStatus(s) {
+    const d = s.data;
+    if (!d) return ["READY", "0"];
+    const map = { baggage: ["PACKED", d.weight + " KG"], auction: ["TOP BIDS", "$" + sum([...d.bids || []].sort((a, b) => b - a).slice(0, 2))], race: ["FINISH", String(d.finish)], stamps: ["LINES", String(d.lines?.length)], bubble: ["AIR", d.air + " / " + d.capacity], seats: ["GUESTS MOVED", String(d.moves)], blocks: ["LINES", String(d.lines)], charms: ["CHARMS", String(sum(d.counts || []))], toll: ["GATES", String(d.gates)], credit: ["LIMIT", "$" + d.limit], map: ["DETOURS", String(d.detours)], plinko: ["DROPS", String(d.drops?.length)], encore: ["NEXT NOTE", ["C", "E", "G"][d.note]], bowling: ["RACKS", String(d.racks)], tower: ["WIDTH", String(d.width)], boss: ["BOSS HP", String(d.hp)] };
+    return map[s.mode];
+  }
+
+  // arcade/src/model.mjs
   var MODES = {
+    ...EXTRA_MODES,
     dice: { name: "Dice Boost", tag: "ONE ROLL. MORE TROUBLE.", rule: "Roll for extra spins. Stack x2 boosts for your next cash hit.", short: "Boosts stack. Cash collects." },
     roulette: { name: "Russian Roulette", tag: "SIX CHAMBERS. ONE WAY OUT.", rule: "Keep adding cash. Stack x2 on the whole bill. EXIT ends the round.", short: "Keep spinning until EXIT." },
     rent: { name: "Rent Free", tag: "CUTE STREET. EXPENSIVE ADDRESS.", rule: "Build where you land. Then pay rent on EVERY property you've built. Revisit to upgrade.", short: "Build one. Pay the whole street." },
@@ -171,6 +498,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   }
   function board(s) {
     if (s.phase === "normal") return [1, 1.2, 0.8, 0.6, 1, 1.5, 0.5, 1, 0.8, 1.2, 0.6, 1].map((k) => ({ kind: "cash", value: Math.max(1, Math.round(s.prices.cash * k)) }));
+    if (isExtra(s.mode)) return extraBoard(s);
     if (s.mode === "roulette") return [{ kind: "cash", value: s.prices.cash }, { kind: "cash", value: s.prices.cash }, { kind: "cash", value: s.prices.cash }, { kind: "cash", value: s.prices.cash }, { kind: "total", value: 2 }, { kind: "exit", value: 0 }];
     if (s.mode === "rent") return STREETS.map((name, i) => ({ kind: "rent", name, value: Math.max(1, Math.round(s.prices.cash * (0.5 + 0.5 * (i % 3)))), rent: s.rents[i], level: s.levels[i] }));
     if (s.mode === "gumball") return Array.from({ length: 9 }, (_, i) => ({ kind: "candy", color: i % 3, value: s.prices.cash }));
@@ -180,83 +508,94 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     if (s.phase !== "activate") throw new Error("Scam is not ready");
     if (s.mode === "dice" && (!Number.isInteger(die) || die < 1 || die > 6)) throw new Error("Invalid die");
     const spins = s.mode === "dice" ? s.prices.spins + die : s.mode === "rent" ? s.prices.spins + 1 : s.mode === "gumball" ? s.prices.spins + 3 : null;
+    if (isExtra(s.mode)) return { ...s, ...startExtra(s), phase: "active", step: 0, last: null };
     return { ...s, phase: "active", die: s.mode === "dice" ? die : null, spins, mult: 1, last: null, step: 0 };
   }
   function choose(s, rng = Math.random) {
     if (s.scripted) {
       if (s.phase === "normal") return [0, 1][s.normal];
-      const seq = { dice: [0, 2, 5, 8, 1, 4, 3, 2, 6, 7], roulette: [0, 4, 1, 2, 4, 3, 5], rent: [0, 1, 0, 2], gumball: [0, 1, 3, 2, 6, 4] }[s.mode];
+      const seq = EXTRA_MODES[s.mode]?.showcase ?? { dice: [0, 2, 5, 8, 1, 4, 3, 2, 6, 7], roulette: [0, 4, 1, 2, 4, 3, 5], rent: [0, 1, 0, 2], gumball: [0, 1, 3, 2, 6, 4] }[s.mode];
       return seq[s.step] ?? 0;
     }
     return Math.min(board(s).length - 1, Math.floor(rng() * board(s).length));
   }
-  function land(s, index) {
+  function land(s, index, rng = Math.random) {
     if (!["normal", "active"].includes(s.phase)) throw new Error("No spin is pending");
-    const item = board(s)[index];
-    if (!item) throw new Error("Invalid landing");
-    let next = { ...s, step: s.step + 1, ledger: [...s.ledger] }, entry = { kind: item.kind, index, before: s.total, mult: s.mult, amount: 0 };
+    const item2 = board(s)[index];
+    if (!item2) throw new Error("Invalid landing");
+    let next = { ...s, step: s.step + 1, ledger: [...s.ledger] }, entry = { kind: item2.kind, index, before: s.total, mult: s.mult, amount: 0 };
     if (s.phase === "normal") {
-      next.total += item.value;
+      next.total += item2.value;
       next.normal++;
-      entry.amount = item.value;
+      entry.amount = item2.value;
       entry.label = "Opening spin " + next.normal;
       if (next.normal === 2) {
         next.phase = "activate";
         next.step = 0;
       }
-    } else if (item.kind === "rent") {
+    } else if (item2.kind === "arcade") {
+      const result = landExtra(s, item2, index, rng);
+      next.data = result.data;
+      next.spins = result.spins;
+      entry = { ...entry, ...result.entry };
+      next.total += entry.amount;
+      if (result.complete) {
+        next.phase = "complete";
+        next.reason = s.mode;
+      }
+    } else if (item2.kind === "rent") {
       next.rents = [...s.rents];
       next.levels = [...s.levels];
-      next.rents[index] += item.value;
+      next.rents[index] += item2.value;
       next.levels[index]++;
       entry.rents = [...next.rents];
-      entry.name = item.name;
+      entry.name = item2.name;
       entry.level = next.levels[index];
       entry.previousRent = s.rents[index];
       entry.newRent = next.rents[index];
       entry.amount = next.rents.reduce((a, b) => a + b, 0);
-      entry.label = item.name + " " + (entry.level === 1 ? "built" : "upgraded") + " - street rent";
+      entry.label = item2.name + " " + (entry.level === 1 ? "built" : "upgraded") + " - street rent";
       next.total += entry.amount;
       next.spins--;
       if (next.spins === 0) {
         next.phase = "complete";
         next.reason = "street";
       }
-    } else if (item.kind === "candy") {
+    } else if (item2.kind === "candy") {
       next.candies = [...s.candies];
-      next.candies[item.color]++;
-      entry.color = item.color;
-      entry.matched = next.candies[item.color] === 3;
-      entry.setBonus = entry.matched ? s.prices.cash * SWEETS[item.color].factor : 0;
+      next.candies[item2.color]++;
+      entry.color = item2.color;
+      entry.matched = next.candies[item2.color] === 3;
+      entry.setBonus = entry.matched ? s.prices.cash * SWEETS[item2.color].factor : 0;
       entry.candies = [...next.candies];
       if (entry.matched) {
-        next.candies[item.color] = 0;
+        next.candies[item2.color] = 0;
         next.sets++;
       }
-      entry.amount = item.value + entry.setBonus;
-      entry.label = SWEETS[item.color].name + (entry.matched ? " trio + candy" : " candy");
+      entry.amount = item2.value + entry.setBonus;
+      entry.label = SWEETS[item2.color].name + (entry.matched ? " trio + candy" : " candy");
       next.total += entry.amount;
       next.spins--;
       if (next.spins === 0) {
         next.phase = "complete";
         next.reason = "sweets";
       }
-    } else if (item.kind === "boost" || item.kind === "total") {
+    } else if (item2.kind === "boost" || item2.kind === "total") {
       next.mult = Math.min(64, s.mult * 2);
-      entry.label = item.kind === "boost" ? "Next cash x" + next.mult : "Ending total x" + next.mult;
-    } else if (item.kind === "exit") {
+      entry.label = item2.kind === "boost" ? "Next cash x" + next.mult : "Ending total x" + next.mult;
+    } else if (item2.kind === "exit") {
       next.total = s.total * s.mult;
       entry.amount = next.total - s.total;
       entry.label = "Final bill x" + s.mult;
       next.phase = "complete";
       next.reason = "exit";
     } else {
-      entry.amount = item.value * (s.mode === "dice" ? s.mult : 1);
+      entry.amount = item2.value * (s.mode === "dice" ? s.mult : 1);
       next.total += entry.amount;
-      entry.label = item.kind === "bonus" ? "Cash + free spin" : "Cash hit";
+      entry.label = item2.kind === "bonus" ? "Cash + free spin" : "Cash hit";
       if (s.mode === "dice") {
         next.mult = 1;
-        if (item.kind === "cash") next.spins--;
+        if (item2.kind === "cash") next.spins--;
         if (next.spins === 0) {
           next.phase = "complete";
           next.reason = "spins";
@@ -267,24 +606,691 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (s.mode === "roulette") {
         next.total *= next.mult;
         entry.limitMultiplier = next.mult;
+        entry.amount = next.total - s.total;
+        entry.label += " - round limit settled";
       }
       next.phase = "complete";
       next.reason = "limit";
     }
     entry.after = next.total;
-    entry.base = item.value;
+    entry.base = item2.value;
     next.last = entry;
     next.ledger.push(entry);
     return next;
   }
 
-  // src/render.mjs
+  // arcade/src/config.mjs
+  var THEME = { pink: "#ce6ca1", lilac: "#bca3e6", gold: "#ffd98c", cream: "#fff2dc", ink: "#512545" };
+  var PRESETS = { sweet: { ...THEME }, mint: { ...THEME, pink: "#5e9f91", lilac: "#a7cce5", gold: "#ffdf9e" }, royal: { ...THEME, pink: "#9a5c9a", lilac: "#a69bd3", gold: "#f3ca7e" } };
+  var freshConfig = () => ({ version: 1, stake: "low", profiles: { low: { cash: 10, bonus: 2, spins: 3 }, high: { cash: 50, bonus: 10, spins: 3 } }, theme: { ...THEME }, mode: "surprise", sound: true, volume: 70 });
+  function validateConfig(raw) {
+    if (!raw || typeof raw !== "object") throw new Error("Settings must be an object.");
+    const result = freshConfig();
+    if (raw.version !== void 0 && raw.version !== 1) throw new Error("This settings version is not supported.");
+    if (raw.stake !== void 0 && !["low", "high"].includes(raw.stake)) throw new Error("Choose low or high stakes.");
+    result.stake = raw.stake ?? result.stake;
+    for (const k of ["low", "high"]) {
+      if (raw.profiles?.[k]) {
+        if (!validPrices(raw.profiles[k])) throw new Error("Amounts must be whole dollars from 1 to 1,000; starting spins from 1 to 10.");
+        result.profiles[k] = { cash: raw.profiles[k].cash, bonus: raw.profiles[k].bonus, spins: raw.profiles[k].spins };
+      }
+    }
+    if (raw.mode !== void 0 && raw.mode !== "surprise" && !MODES[raw.mode]) throw new Error("Unknown scam.");
+    result.mode = raw.mode ?? result.mode;
+    for (const k of Object.keys(THEME)) {
+      if (raw.theme?.[k] !== void 0) {
+        if (!/^#[0-9a-f]{6}$/i.test(raw.theme[k])) throw new Error("Theme colours must use six-digit hex values.");
+        result.theme[k] = raw.theme[k];
+      }
+    }
+    if (raw.sound !== void 0) result.sound = !!raw.sound;
+    if (raw.volume !== void 0) {
+      if (!Number.isFinite(raw.volume) || raw.volume < 0 || raw.volume > 100) throw new Error("Volume must be from 0 to 100.");
+      result.volume = raw.volume;
+    }
+    return result;
+  }
+  function readConfig(storage) {
+    try {
+      return validateConfig(JSON.parse(storage.getItem("faith-scam-arcade-v2")));
+    } catch {
+      return freshConfig();
+    }
+  }
+  function saveConfig(storage, config2) {
+    try {
+      storage.setItem("faith-scam-arcade-v2", JSON.stringify(validateConfig(config2)));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function makeDiscoveryDeck(ids, rng = Math.random) {
+    const choices = [...new Set(ids)];
+    if (!choices.length) throw new Error("Choose at least one scam.");
+    let deck = [], previous;
+    return () => {
+      if (!deck.length) {
+        deck = [...choices];
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        if (deck.length > 1 && deck[0] === previous) [deck[0], deck[1]] = [deck[1], deck[0]];
+      }
+      previous = deck.shift();
+      return previous;
+    };
+  }
+
+  // arcade/src/pixel-art.mjs
+  var cache = /* @__PURE__ */ new Map();
+  function make(name, variant) {
+    const image = document.createElement("canvas");
+    image.width = image.height = 72;
+    const g = image.getContext("2d");
+    const ink = "#342233", shine = "#fff0d0", gold2 = "#edc88f", shade = "#8a6557", pink2 = "#eea0bc", rose = "#c7769d", lilac2 = "#bc99dc", purple = "#654b88", mint2 = "#a7dcc2", green = "#4f8d87";
+    const r = (x, y, w, h, c) => {
+      g.fillStyle = c;
+      g.fillRect(x, y, w, h);
+    };
+    const p = (points, c) => {
+      g.beginPath();
+      points.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y));
+      g.closePath();
+      g.fillStyle = c;
+      g.fill();
+    };
+    const ellipse = (x, y, rx, ry, c) => {
+      g.fillStyle = c;
+      g.beginPath();
+      g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      g.fill();
+    };
+    const oct = (x, y, w, h, c) => p([[x + 6, y], [x + w - 6, y], [x + w, y + 6], [x + w, y + h - 6], [x + w - 6, y + h], [x + 6, y + h], [x, y + h - 6], [x, y + 6]], c);
+    const cube = (x, y, w, h, col, hi, lo) => {
+      p([[x, y + 6], [x + 12, y], [x + w, y], [x + w, y + h], [x + w - 12, y + h + 6], [x, y + h + 6]], ink);
+      r(x + 2, y + 8, w - 16, h - 4, col);
+      p([[x + 2, y + 6], [x + 12, y + 2], [x + w - 4, y + 2], [x + w - 14, y + 6]], hi);
+      p([[x + w - 12, y + 8], [x + w - 2, y + 4], [x + w - 2, y + h - 2], [x + w - 12, y + h + 2]], lo);
+      r(x + 4, y + 10, 2, h - 8, hi);
+      r(x + 4, y + h, w - 20, 2, hi);
+    };
+    const coin = (x, y) => {
+      oct(x, y, 22, 24, shade);
+      oct(x + 2, y + 2, 18, 20, gold2);
+      r(x + 5, y + 4, 9, 2, shine);
+      r(x + 4, y + 6, 2, 7, shine);
+      r(x + 10, y + 6, 3, 12, shade);
+      r(x + 7, y + 9, 9, 2, shade);
+      r(x + 8, y + 15, 8, 2, shade);
+    };
+    const heart = (x, y, col, sz = 1) => {
+      g.save();
+      g.translate(x, y);
+      g.scale(sz, sz);
+      p([[0, 6], [4, 2], [10, 2], [14, 6], [18, 2], [24, 2], [28, 6], [28, 16], [14, 30], [0, 16]], ink);
+      p([[2, 7], [5, 4], [9, 4], [14, 9], [19, 4], [23, 4], [26, 7], [26, 15], [14, 27], [2, 15]], col);
+      r(5, 7, 5, 3, "#ffe1e9");
+      r(4, 10, 3, 4, "#ffe1e9");
+      g.restore();
+    };
+    ellipse(36, 66, 25, 4, "#1b102544");
+    switch (name) {
+      case "parcel":
+        cube(8, 28, 53, 29, variant % 2 ? mint2 : lilac2, "#ebd2f3", variant % 2 ? green : purple);
+        r(27, 36, 9, 25, gold2);
+        r(29, 37, 2, 22, shine);
+        p([[26, 34], [38, 27], [46, 27], [34, 34]], shine);
+        r(5, 31, 43, 7, lilac2);
+        r(5, 37, 43, 2, purple);
+        p([[47, 31], [64, 23], [64, 30], [47, 39]], purple);
+        p([[5, 31], [20, 23], [64, 23], [47, 31]], "#ebd2f3");
+        heart(20, 4, pink2, 0.85);
+        heart(34, 4, gold2, 0.75);
+        r(30, 24, 12, 8, rose);
+        r(32, 24, 8, 3, shine);
+        break;
+      case "gavel":
+        g.save();
+        g.translate(34, 32);
+        g.rotate(-0.55);
+        r(-5, -3, 12, 37, ink);
+        r(-3, -1, 8, 34, shade);
+        r(-3, 0, 2, 29, gold2);
+        oct(-25, -19, 50, 24, ink);
+        r(-21, -16, 42, 18, gold2);
+        r(-21, -16, 42, 4, shine);
+        r(-22, -16, 7, 18, rose);
+        r(15, -16, 7, 18, rose);
+        r(-12, -14, 24, 3, "#ffe0a0");
+        r(-18, -1, 36, 3, shade);
+        g.restore();
+        oct(8, 57, 56, 10, ink);
+        r(12, 57, 48, 4, gold2);
+        break;
+      case "horse": {
+        const coat = [pink2, lilac2, mint2][variant % 3], dark = [rose, purple, green][variant % 3];
+        p([[13, 28], [19, 22], [44, 22], [44, 10], [51, 4], [56, 12], [63, 16], [66, 30], [59, 35], [48, 31], [46, 47], [42, 61], [35, 61], [33, 47], [24, 47], [20, 61], [13, 61], [15, 40], [7, 38], [5, 24], [9, 18], [13, 20]], ink);
+        p([[17, 28], [22, 25], [46, 25], [46, 13], [51, 9], [54, 15], [60, 19], [62, 28], [58, 31], [47, 27], [43, 45], [39, 58], [37, 58], [37, 43], [22, 43], [17, 58], [15, 58], [19, 38]], coat);
+        r(23, 26, 18, 3, "#ffe0e6");
+        r(22, 31, 19, 13, dark);
+        r(24, 30, 15, 8, gold2);
+        r(26, 31, 11, 2, shine);
+        r(53, 19, 4, 4, ink);
+        r(54, 19, 1, 1, shine);
+        r(43, 13, 5, 15, dark);
+        r(15, 58, 5, 3, dark);
+        r(36, 58, 5, 3, dark);
+        r(7, 22, 5, 14, dark);
+        break;
+      }
+      case "stamp":
+        oct(13, 7, 46, 57, ink);
+        r(15, 9, 42, 53, shine);
+        for (let i = 0; i < 6; i++) {
+          r(11, 12 + i * 8, 5, 4, shine);
+          r(56, 12 + i * 8, 5, 4, shine);
+        }
+        r(20, 14, 32, 42, lilac2);
+        r(22, 16, 28, 3, "#ebd2f3");
+        heart(23, 22, pink2, 0.8);
+        r(25, 52, 22, 2, shine);
+        break;
+      case "bubble":
+      case "marble": {
+        const col = [pink2, lilac2, mint2][variant % 3], dark = [rose, purple, green][variant % 3];
+        const ball = [[24, 7], [48, 7], [48, 10], [56, 10], [56, 16], [62, 16], [62, 24], [65, 24], [65, 48], [62, 48], [62, 56], [56, 56], [56, 62], [48, 62], [48, 65], [24, 65], [24, 62], [16, 62], [16, 56], [10, 56], [10, 48], [7, 48], [7, 24], [10, 24], [10, 16], [16, 16], [16, 10], [24, 10]];
+        p(ball, ink);
+        g.save();
+        g.translate(36, 36);
+        g.scale(0.92, 0.92);
+        g.translate(-36, -36);
+        p(ball, dark);
+        g.translate(-2, -2);
+        g.scale(0.94, 0.94);
+        p(ball, col);
+        g.restore();
+        r(20, 13, 21, 4, "#ffedf3");
+        r(14, 20, 4, 15, "#ffedf3");
+        r(17, 16, 6, 5, "#ffedf3");
+        r(51, 35, 5, 13, dark);
+        r(43, 49, 12, 5, dark);
+        r(22, 56, 23, 3, "#e0bce4");
+        r(25, 24, 7, 5, "#ffffff88");
+        break;
+      }
+      case "chair":
+        oct(14, 5, 44, 46, ink);
+        oct(17, 8, 38, 39, purple);
+        r(21, 10, 30, 29, rose);
+        r(23, 12, 25, 3, pink2);
+        r(33, 18, 5, 5, gold2);
+        r(15, 43, 42, 15, ink);
+        r(18, 44, 36, 10, lilac2);
+        r(20, 44, 31, 3, "#ebd2f3");
+        r(8, 31, 13, 24, ink);
+        r(51, 31, 13, 24, ink);
+        r(11, 33, 7, 18, gold2);
+        r(54, 33, 7, 18, gold2);
+        r(13, 55, 6, 10, shade);
+        r(53, 55, 6, 10, shade);
+        break;
+      case "blocks":
+        cube(5, 42, 29, 17, lilac2, "#ebd2f3", purple);
+        cube(30, 42, 29, 17, mint2, "#d8f0d5", green);
+        cube(30, 23, 29, 17, pink2, "#ffd6e3", rose);
+        cube(30, 4, 29, 17, gold2, shine, shade);
+        break;
+      case "charm":
+        oct(25, 2, 22, 15, shade);
+        oct(29, 4, 14, 10, gold2);
+        r(32, 6, 8, 5, ink);
+        if (variant % 3 === 0) heart(9, 21, pink2, 1.8);
+        else if (variant % 3 === 1) {
+          oct(13, 18, 47, 46, ink);
+          oct(15, 20, 43, 42, lilac2);
+          oct(30, 18, 29, 34, ink);
+          oct(33, 17, 29, 32, "#3b254a");
+          r(19, 27, 4, 20, "#ebd2f3");
+        } else {
+          p([[36, 17], [42, 29], [62, 31], [48, 43], [52, 63], [36, 53], [20, 63], [24, 43], [10, 31], [30, 29]], ink);
+          p([[36, 23], [40, 33], [55, 34], [44, 42], [47, 56], [36, 49], [25, 56], [28, 42], [17, 34], [33, 33]], gold2);
+          p([[36, 24], [40, 34], [34, 34], [29, 44], [29, 37], [20, 35], [33, 33]], shine);
+        }
+        break;
+      case "car":
+        oct(6, 29, 60, 29, ink);
+        p([[14, 29], [22, 11], [48, 11], [58, 29]], ink);
+        p([[20, 28], [26, 15], [45, 15], [52, 28]], "#bfe5ff");
+        r(34, 14, 3, 15, purple);
+        r(24, 18, 8, 3, "#f3ffff");
+        r(9, 32, 54, 20, pink2);
+        r(11, 32, 50, 4, "#ffd6e3");
+        r(12, 44, 48, 8, rose);
+        r(12, 49, 12, 14, ink);
+        r(48, 49, 12, 14, ink);
+        r(16, 52, 5, 7, "#998aa4");
+        r(51, 52, 5, 7, "#998aa4");
+        r(8, 38, 9, 7, shine);
+        r(55, 38, 9, 7, shine);
+        r(26, 43, 20, 3, gold2);
+        break;
+      case "card":
+        oct(3, 14, 66, 44, ink);
+        oct(6, 17, 60, 38, lilac2);
+        r(8, 19, 55, 3, "#ebd2f3");
+        r(6, 27, 60, 8, purple);
+        r(12, 39, 13, 10, gold2);
+        r(14, 41, 9, 2, shine);
+        r(18, 39, 2, 10, shade);
+        r(32, 43, 5, 3, shine);
+        r(41, 43, 5, 3, shine);
+        r(50, 43, 5, 3, shine);
+        r(10, 53, 50, 2, "#a783c8");
+        break;
+      case "compass":
+        oct(9, 5, 54, 60, shade);
+        oct(12, 8, 48, 54, gold2);
+        oct(16, 12, 40, 46, ink);
+        oct(18, 14, 36, 42, "#e8d9b9");
+        p([[36, 16], [46, 43], [36, 36], [26, 43]], rose);
+        p([[36, 55], [26, 28], [36, 36], [46, 28]], purple);
+        r(34, 33, 5, 6, shine);
+        r(23, 15, 10, 3, shine);
+        break;
+      case "note":
+        r(34, 7, 9, 40, ink);
+        r(39, 7, 23, 15, ink);
+        r(38, 10, 5, 35, lilac2);
+        r(43, 10, 16, 8, pink2);
+        oct(15, 38, 28, 21, ink);
+        oct(18, 40, 22, 16, lilac2);
+        r(21, 42, 10, 3, "#ebd2f3");
+        r(9, 16, 3, 11, gold2);
+        r(5, 20, 11, 3, gold2);
+        break;
+      case "pin":
+        p([[29, 4], [43, 4], [47, 8], [47, 20], [43, 28], [47, 34], [54, 48], [54, 61], [49, 66], [23, 66], [18, 61], [18, 48], [25, 34], [29, 28], [25, 20], [25, 8]], ink);
+        p([[30, 7], [42, 7], [44, 10], [44, 19], [40, 28], [44, 35], [50, 49], [50, 59], [47, 62], [25, 62], [22, 59], [22, 49], [28, 35], [32, 28], [28, 19], [28, 10]], "#fff0e1");
+        r(28, 24, 16, 5, pink2);
+        r(29, 32, 15, 4, rose);
+        r(25, 46, 4, 11, "#fffaff");
+        r(45, 48, 4, 11, "#d4b8ca");
+        break;
+      case "tower":
+        cube(9, 46, 54, 17, pink2, "#ffd6e3", rose);
+        cube(15, 27, 42, 17, lilac2, "#ebd2f3", purple);
+        cube(20, 8, 32, 17, mint2, "#d8f0d5", green);
+        r(23, 37, 4, 6, shine);
+        r(32, 37, 4, 6, shine);
+        r(20, 56, 4, 6, shine);
+        r(31, 56, 4, 6, shine);
+        break;
+      case "pig":
+        oct(10, 17, 52, 45, ink);
+        p([[12, 23], [8, 5], [28, 13], [28, 25]], ink);
+        p([[60, 23], [64, 5], [44, 13], [44, 25]], ink);
+        p([[14, 20], [12, 11], [24, 16], [24, 24]], rose);
+        p([[58, 20], [60, 11], [48, 16], [48, 24]], rose);
+        oct(13, 20, 46, 39, pink2);
+        r(18, 24, 33, 3, "#ffd6e3");
+        r(22, 32, 5, 6, ink);
+        r(46, 32, 5, 6, ink);
+        r(23, 32, 2, 2, shine);
+        r(47, 32, 2, 2, shine);
+        oct(24, 42, 27, 15, rose);
+        r(27, 44, 20, 3, "#f6b6cd");
+        r(30, 48, 3, 4, ink);
+        r(42, 48, 3, 4, ink);
+        p([[22, 19], [20, 3], [30, 9], [36, 1], [42, 9], [52, 3], [50, 19]], shade);
+        p([[25, 16], [23, 7], [31, 12], [36, 5], [41, 12], [49, 7], [47, 16]], gold2);
+        r(27, 16, 19, 3, shine);
+        r(34, 11, 4, 4, pink2);
+        break;
+      default:
+        coin(24, 23);
+    }
+    return image;
+  }
+  function pixelSprite(ctx, name, x, y, size = 64, variant = 0, angle = 0, alpha = 1) {
+    const key = name + ":" + variant;
+    if (!cache.has(key)) cache.set(key, make(name, variant));
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(cache.get(key), -size / 2, -size / 2, size, size);
+    ctx.restore();
+  }
+
+  // arcade/src/scenes.mjs
   var TAU = Math.PI * 2;
+  var clamp = (n) => Math.max(0, Math.min(1, n));
+  var lerp = (a, b, t) => a + (b - a) * t;
+  var ease = (t) => 1 - (1 - t) ** 3;
+  var cream = "#fff0dd";
+  var gold = "#ffe0a0";
+  var pink = "#eea0bc";
+  var lilac = "#bc99dc";
+  var mint = "#a7dcc2";
+  function drawScene(ctx, s, t) {
+    const mode = s.round.mode, def2 = EXTRA_MODES[mode], d = s.round.data;
+    if (!def2 || !d) return;
+    const e = s.overlay?.kind === "arcade" ? s.overlay.entry : null, age = e ? t - s.overlay.at : 3e3, p = s.reduced ? 1 : ease(clamp(age / 1850)), before = e?.fx.before ?? d;
+    const text = (str, x, y, size = 20, color = cream) => {
+      ctx.font = "1000 " + size + "px Nunito";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = color;
+      ctx.fillText(String(str), x, y);
+    };
+    const rect = (x, y, w, h, fill, stroke) => {
+      ctx.fillStyle = fill;
+      ctx.fillRect(x, y, w, h);
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+      }
+    };
+    const circle = (x, y, r, fill, stroke) => {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    };
+    const line = (points, color = gold, width = 3) => {
+      ctx.beginPath();
+      points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineJoin = "round";
+      ctx.stroke();
+    };
+    const sprite = (name, x, y, size = 64, variant = 0, angle = 0, alpha = 1) => pixelSprite(ctx, name, x, y, size, variant, angle, alpha);
+    ctx.save();
+    ctx.translate(500, 435);
+    ctx.shadowColor = "#1b0d2988";
+    ctx.shadowBlur = 12;
+    circle(0, 0, 178, "#3a2548", def2.colors[2]);
+    ctx.shadowBlur = 0;
+    circle(0, 0, 171, "#32223f", "#bd96b977");
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, 168, 0, TAU);
+    ctx.clip();
+    for (let i = 0; i < 16; i++) {
+      const x = i * 71 % 310 - 155, y = i * 91 % 306 - 153;
+      rect(x, y, 2, 2, "#dec3e415");
+    }
+    switch (mode) {
+      case "baggage": {
+        const weights = e && p < 0.45 ? before.weights : d.weights;
+        for (let i = 0; i < weights.length; i++) {
+          const x = -100 + i % 4 * 65, y = 66 - Math.floor(i / 4) * 61, bounce = e && i === weights.length - 1 ? Math.sin(p * Math.PI) * -35 : 0;
+          sprite("parcel", x, y + bounce, 65, i);
+          text(weights[i] + "kg", x, y + 27 + bounce, 15);
+        }
+        rect(-106, 109, 212, 19, "#8e647b");
+        rect(-84, 128, 168, 8, "#e7bd97");
+        text("HEAVIEST RATE", 0, -124, 16, def2.colors[2]);
+        text("$" + d.rate * s.round.prices.cash + " / KG", 0, -94, 28, gold);
+        text(d.weight + " KG PACKED", 0, -52, 18);
+        break;
+      }
+      case "auction": {
+        const top = [...d.bids].sort((a, b) => b - a).slice(0, 2), count = d.bids.length;
+        text("THE TOP TWO BOTH COUNT", 0, -127, 14, def2.colors[2]);
+        for (let i = 0; i < count; i++) {
+          const x = -98 + i % 4 * 66, y = -56 + Math.floor(i / 4) * 54, isTop = top.includes(d.bids[i]);
+          rect(x - 22, y - 18, 44, 39, isTop ? "#aa7095" : "#5a4169", isTop ? gold : "#a786ae");
+          rect(x - 3, y + 21, 6, 18, "#b89183");
+          text("$" + d.bids[i], x, y, Math.min(19, 75 / String(d.bids[i]).length), cream);
+        }
+        sprite("gavel", 53, 95, 76, 0, e && s.round.phase === "complete" ? Math.sin(p * Math.PI) * -0.7 : 0);
+        text("SOLD x 2", -48, 117, 21, gold);
+        break;
+      }
+      case "race": {
+        text("FINISH AT " + d.finish, 0, -130, 22, def2.colors[2]);
+        for (let i = 0; i < 3; i++) {
+          const y = -67 + i * 70;
+          rect(-131, y + 15, 260, 15, ["#674557", "#554568", "#3e5c58"][i]);
+          for (let k = 0; k < 7; k++) rect(-125 + k * 38, y + 21, 18, 2, "#e7cfe344");
+          const pos = lerp(before.distance[i], d.distance[i], p) / d.finish;
+          const x = -102 + Math.min(1, pos) * 204;
+          sprite("horse", x, y - 3, 59, i, s.reduced ? 0 : Math.sin(t / 110 + i) * 0.025);
+          text(d.distance[i], -140, y + 4, 22, [pink, lilac, mint][i]);
+        }
+        for (let y = -111; y < 117; y += 16) for (let j = 0; j < 2; j++) rect(122 + j * 8, y, 8, 8, (y / 16 + j) % 2 ? "#fce3cf" : "#88718d");
+        break;
+      }
+      case "stamps": {
+        for (let i = 0; i < 9; i++) {
+          const x = -65 + i % 3 * 65, y = -65 + Math.floor(i / 3) * 65, stamped = d.marks[i] > 0;
+          rect(x - 27, y - 27, 55, 55, stamped ? "#9571a1" : "#e9d4c2", stamped ? gold : "#c8a9ba");
+          if (stamped) {
+            sprite("stamp", x, y, 48, i);
+            text("$" + d.marks[i], x, y + 15, Math.min(20, 70 / String(d.marks[i]).length), cream);
+          } else text(i + 1, x, y, 25, "#775271");
+        }
+        const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8]];
+        for (const i of d.lines) {
+          const ends = [lines[i][0], lines[i][2]].map((v) => [-65 + v % 3 * 65, -65 + Math.floor(v / 3) * 65]);
+          ctx.globalAlpha = 0.5;
+          line(ends, gold, 5);
+          ctx.globalAlpha = 1;
+        }
+        text(d.lines.length + " DUTY LINES", 0, 132, 18, gold);
+        break;
+      }
+      case "bubble": {
+        const pop = e && d.pops > before.pops, inflate = pop && age < 900 ? lerp(before.air / before.capacity, 1, clamp(age / 800)) : lerp(before.air / before.capacity, d.air / d.capacity, p), size = 90 + inflate * 137;
+        if (pop && age > 750 && age < 1550 && !s.reduced) {
+          const q = (age - 750) / 800;
+          for (let i = 0; i < 16; i++) {
+            const a = i * TAU / 16;
+            circle(Math.cos(a) * (70 + q * 75), Math.sin(a) * (70 + q * 75), 9 * (1 - q), [pink, lilac, mint][i % 3]);
+          }
+        }
+        sprite("bubble", 0, -14, size, d.pops % 3, 0, pop && age > 750 && age < 1100 ? 0.25 : 1);
+        text(d.air + " / " + d.capacity + " AIR", 0, 111, 24, def2.colors[2]);
+        text(d.pops + " POP BONUSES", 0, 140, 16);
+        break;
+      }
+      case "seats": {
+        for (let i = 0; i < 6; i++) {
+          const a = -Math.PI / 2 + i * TAU / 6, x = Math.cos(a) * 107, y = Math.sin(a) * 107;
+          sprite("chair", x, y, 63, i);
+          text(i + 1, x, y + 29, 14, gold);
+          if (d.occupied[i]) sprite("charm", x, y - 5, 25, i % 3);
+        }
+        if (e && !s.reduced && p < 1) for (const i of e.moved || []) {
+          const a = -Math.PI / 2 + (i + p) * TAU / 6;
+          sprite("charm", Math.cos(a) * 107, Math.sin(a) * 107 - 10, 34, i % 3);
+        }
+        text("GUESTS MOVED", 0, -15, 13);
+        text(d.moves, 0, 20, 38, gold);
+        if (d.standing) text("STANDING: " + d.standing, 0, 53, 14, pink);
+        break;
+      }
+      case "blocks": {
+        for (let col = 0; col < 4; col++) for (let row = 0; row < 8; row++) rect(-62 + col * 33, 102 - row * 28, 30, 25, "#4c385d", "#715275");
+        const clearing = e?.cleared && age < 1300, heights = clearing ? before.heights.map((h, i) => h + (i === e.fx.item.column ? e.fx.item.value : 0)) : d.heights;
+        for (let col = 0; col < 4; col++) for (let row = 0; row < Math.min(8, heights[col]); row++) {
+          const y = 102 - row * 28;
+          rect(-62 + col * 33, y, 30, 25, [pink, lilac, mint, gold][col]);
+          rect(-59 + col * 33, y + 3, 23, 3, "#fff3db99");
+          rect(-36 + col * 33, y + 6, 3, 17, "#49294266");
+        }
+        if (clearing) {
+          ctx.globalAlpha = s.reduced ? 0.4 : Math.sin(age / 80) * 0.3 + 0.5;
+          rect(-64, 105 - e.cleared * 28, 134, e.cleared * 28, "#fff7d9");
+          ctx.globalAlpha = 1;
+        }
+        text(d.lines + " ROWS CLEARED", 0, 145, 16, gold);
+        break;
+      }
+      case "charms": {
+        line([[-122, -65], [-70, -9], [0, 16], [70, -9], [122, -65]], gold, 5);
+        for (let i = 0; i < 3; i++) {
+          const x = -92 + i * 92, y = i === 1 ? 8 : -11;
+          const count = d.counts[i];
+          sprite("charm", x, y, 70, i, 0, count ? 1 : 0.35);
+          text(count + (count === 1 ? " COPY" : " COPIES"), x, y + 59, 20);
+          text("$" + count * s.round.prices.cash * (i + 1) + " EACH", x, y + 83, 18, gold);
+        }
+        text("EVERY COPY GETS REPRICED", 0, -119, 14, def2.colors[2]);
+        break;
+      }
+      case "toll": {
+        circle(0, 0, 124, "#4f415a");
+        circle(0, 0, 83, "#668777");
+        ctx.strokeStyle = "#e7d7b6";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([12, 9]);
+        ctx.beginPath();
+        ctx.arc(0, 0, 105, 0, TAU);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        for (let i = 0; i < 12; i++) {
+          const a2 = -Math.PI / 2 + i * TAU / 12, x = Math.cos(a2) * (i % 3 === 0 ? 146 : 118), y = Math.sin(a2) * (i % 3 === 0 ? 146 : 118);
+          if (i % 3 === 0) {
+            rect(x - 19, y - 14, 38, 29, "#b6819d", gold);
+            text("$" + (i === 0 ? 4 : i / 3) * s.round.prices.cash, x, y, 15, cream);
+          } else circle(x, y, 3, "#f8dbb6");
+        }
+        const progress = lerp(before.travel, d.travel, p), a = -Math.PI / 2 + progress * TAU / 12;
+        sprite("car", Math.cos(a) * 105, Math.sin(a) * 105, 47, 0, a + Math.PI / 2);
+        text(d.gates, 0, -11, 42, gold);
+        text("TOLLS", 0, 29, 16);
+        break;
+      }
+      case "credit": {
+        sprite("card", 0, -26, 219);
+        const ratio = Math.min(1, d.spent / d.limit);
+        rect(-112, 67, 224, 20, "#22132f", "#c7a7ce");
+        rect(-109, 70, 218 * ratio, 14, ratio === 1 ? pink : mint);
+        text("$" + d.spent + " / $" + d.limit, 0, 112, 20, def2.colors[2]);
+        text(d.over ? "OVER LIMIT +$" + d.over : "AVAILABLE CREDIT", 0, -126, 17, d.over ? pink : cream);
+        if (d.over) line([[-82, -52], [-35, -20], [-14, -44], [12, -4], [38, -19], [79, 23]], "#fff1e3", 4);
+        break;
+      }
+      case "map": {
+        const values = [1, 2, 1, 3, 1, 2, 2, 3, 4];
+        for (let i = 0; i < 9; i++) {
+          const x2 = -64 + i % 3 * 64, y2 = -64 + Math.floor(i / 3) * 64;
+          rect(x2 - 28, y2 - 28, 56, 56, i % 2 ? "#9e9c7d" : "#7d9b87", "#d9d7b0");
+          text("$" + values[i] * s.round.prices.cash, x2, y2 + 13, 20, "#fff4df");
+          rect(x2 - 20, y2 - 18, 8, 7, "#bed5ae");
+          rect(x2 - 10, y2 - 22, 9, 9, "#b7d6b0");
+        }
+        let x = lerp(before.x, d.x, p), y = lerp(before.y, d.y, p);
+        if (e?.wrap) {
+          x = p < 0.5 ? before.x : d.x;
+          y = p < 0.5 ? before.y : d.y;
+          ctx.globalAlpha = Math.abs(p * 2 - 1);
+        }
+        sprite("compass", -64 + x * 64, -77 + y * 64, 48);
+        ctx.globalAlpha = 1;
+        text(d.detours + (d.detours === 1 ? " DETOUR" : " DETOURS"), 0, 130, 20, gold);
+        break;
+      }
+      case "plinko": {
+        for (let row = 0; row < 6; row++) for (let col = 0; col < 5; col++) circle(-96 + col * 48, -115 + row * 31, 3, "#e7c9de");
+        const factors = [1, 3, 8, 3, 1];
+        for (let col = 0; col < 5; col++) {
+          rect(-118 + col * 48, 88, 44, 26, col === 2 ? "#a27b48" : "#75577f", col === 2 ? gold : "#d7b3d6");
+          text("$" + s.round.prices.cash * factors[col], -96 + col * 48, 101, Math.min(18, 70 / String(s.round.prices.cash * factors[col]).length), cream);
+        }
+        const path = d.path.length ? d.path : [2, 2, 2, 2, 2, 2, 2], q = p * 6, segment = Math.min(5, Math.floor(q)), fract = q - segment, x = -96 + lerp(path[segment], path[segment + 1], fract) * 48, y = -118 + q * 30.5;
+        sprite("marble", x, y, 35, 0);
+        break;
+      }
+      case "encore": {
+        for (let i = 0; i < 3; i++) {
+          const x = -93 + i * 93, lit = i < d.note || e && d.songs > before.songs && age < 1600;
+          rect(x - 35, -61, 70, 88, lit ? "#ae7fa9" : "#654676", lit ? gold : "#a78abc");
+          text(["C", "E", "G"][i], x, -16, 42, lit ? gold : cream);
+        }
+        for (let i = 0; i < 7; i++) {
+          rect(-105 + i * 30, 65, 28, 52, "#ead8e4", "#5e416a");
+          if (i < 6) rect(-85 + i * 30, 65, 11, 31, "#563d67");
+        }
+        if (e && !s.reduced) sprite("note", -93 + e.fx.item.note * 93, -105 + p * 36, 55, e.hit ? 0 : 1, p * 0.3);
+        text(d.songs + (d.songs === 1 ? " ENCORE" : " ENCORES"), 0, 152, 16, gold);
+        break;
+      }
+      case "bowling": {
+        ctx.fillStyle = "#b78e81";
+        ctx.beginPath();
+        ctx.moveTo(-81, -113);
+        ctx.lineTo(81, -113);
+        ctx.lineTo(155, 167);
+        ctx.lineTo(-155, 167);
+        ctx.closePath();
+        ctx.fill();
+        for (let i = -2; i <= 2; i++) line([[i * 30, -113], [i * 47, 168]], "#e7c5a555", 2);
+        const positions = [[0, -31], [-24, -58], [24, -58], [-48, -85], [0, -85], [48, -85], [-72, -112], [-24, -112], [24, -112], [72, -112]];
+        for (let i = 9; i >= 0; i--) {
+          const existed = before.pins[i], fallen = e?.fallen?.includes(i), active = e ? existed : d.pins[i], after = p > 0.8;
+          if (!active || fallen && after && p >= 1) continue;
+          const [x, y] = positions[i];
+          sprite("pin", x + (fallen && p > 0.6 ? (p - 0.6) * 60 * (i % 2 ? 1 : -1) : 0), y + (fallen && p > 0.6 ? (p - 0.6) * 40 : 0), 42, 0, fallen && p > 0.6 ? (p - 0.6) * 3 : 0, fallen && p > 0.6 ? 1 - (p - 0.6) * 2.5 : 1);
+        }
+        sprite("marble", e ? Math.sin(p * Math.PI) * (e.fx.item.aim === 0 ? -70 : e.fx.item.aim === 1 ? 70 : 0) : 0, e ? lerp(147, -28, p) : 138, 52, 1);
+        text("RACKS CLEARED: " + d.racks, 0, 152, 15, gold);
+        break;
+      }
+      case "tower": {
+        const floors = d.floors.slice(-9), base = 112, start = Math.max(0, d.floors.length - 9);
+        rect(-128, base + 18, 256, 12, "#ad8d90");
+        floors.forEach((floor, i) => {
+          const y = base - i * 27, isLast = i === floors.length - 1, x = -80 + floor.x * 20 + (isLast && e ? (1 - p) * 180 * (floor.dir || 1) : 0);
+          for (let k = 0; k < floor.width; k++) {
+            rect(x + k * 20, y, 19, 24, [pink, lilac, mint][(i + start) % 3]);
+            rect(x + k * 20 + 2, y + 2, 15, 3, "#fff0da99");
+          }
+          if (isLast && floor.cut && e && p < 1) {
+            const cutX = floor.dir < 0 ? x - floor.cut * 20 : x + floor.width * 20;
+            for (let k = 0; k < floor.cut; k++) rect(cutX + k * 20, y + p * p * 190, 18, 23, "#a4829d");
+          }
+        });
+        text(d.width + " WIDE / " + d.waste + " OFFCUTS", 0, -145, 16, gold);
+        break;
+      }
+      case "boss": {
+        const hit = e && !e.fx.item.heal, shake = hit && !s.reduced ? Math.sin(age / 38) * Math.max(0, 1 - age / 650) * 12 : 0, dead = d.hp === 0;
+        const hp = lerp(before.hp, d.hp, p);
+        rect(-116, -133, 232, 22, "#25152f", "#c9a0bd");
+        rect(-113, -130, 226 * hp / d.max, 16, dead ? gold : pink);
+        sprite("pig", shake, 9, 185, 0, dead ? p * 0.3 : 0, dead ? 1 - p * 0.45 : 1);
+        text(Math.ceil(hp) + " / " + d.max + " HP", 0, -95, 20, cream);
+        if (e?.fx.item.heal) {
+          sprite("charm", -89, -5 - (s.reduced ? 0 : p * 50), 43, 0, 0, 1 - p * 0.6);
+          text(e.healed ? "+" + e.healed + " HP" : "FULL HEALTH", 0, 124, 26, mint);
+        } else text(dead ? "BOUNTY BILLED" : "BOSS BILL", 0, 128, 23, gold);
+        break;
+      }
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+
+  // arcade/src/render.mjs
+  var TAU2 = Math.PI * 2;
   var CX = 500;
   var CY = 435;
   var R = 310;
-  var clamp = (n) => Math.max(0, Math.min(1, n));
-  var ease = (t) => 1 - Math.pow(1 - t, 3);
+  var clamp2 = (n) => Math.max(0, Math.min(1, n));
+  var ease2 = (t) => 1 - Math.pow(1 - t, 3);
   var mix = (a, b, t) => a + (b - a) * t;
   function bezier(t, x1, y1, x2, y2) {
     const p = (s2, a, b) => 3 * (1 - s2) * (1 - s2) * s2 * a + 3 * (1 - s2) * s2 * s2 * b + s2 * s2 * s2;
@@ -298,7 +1304,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   }
   function rotationAt(s, t) {
     if (!s.motion) return s.rotation;
-    const m = s.motion, x = clamp((t - m.at) / m.duration);
+    const m = s.motion, x = clamp2((t - m.at) / m.duration);
     if (s.reduced) return m.to;
     if (x < 0.09) return mix(m.from, m.from - 8, bezier(x / 0.09, 0.35, 0, 0.7, 0.45));
     return mix(m.from - 8, m.to, bezier((x - 0.09) / 0.91, 0.3, 0.09, 0.18, 1));
@@ -315,11 +1321,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     const dpi = Math.min(1.5, window.devicePixelRatio || 1);
     canvas2.width = 1e3 * dpi;
     canvas2.height = 920 * dpi;
-    let ctx = canvas2.getContext("2d"), cache = null, cacheKey = "", reduceMotion = false;
+    let ctx = canvas2.getContext("2d"), cache2 = null, cacheKey = "", reduceMotion = false;
     const P = { pink: "#e58abd", lilac: "#bca3e6", cream: "#fff2dc", ink: "#512545", gold: "#ffd98c", dark: "#422044" };
+    function tint(hex, amount) {
+      const n = parseInt(hex.slice(1), 16);
+      return "#" + [n >> 16 & 255, n >> 8 & 255, n & 255].map((v) => Math.round(v + (255 - v) * amount).toString(16).padStart(2, "0")).join("");
+    }
     function circle(x, y, r, fill, stroke, w = 2) {
       ctx.beginPath();
-      ctx.arc(x, y, r, 0, TAU);
+      ctx.arc(x, y, r, 0, TAU2);
       if (fill) {
         ctx.fillStyle = fill;
         ctx.fill();
@@ -450,14 +1460,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.restore();
     }
     function wheelCache(s, roulette) {
-      const items = s.items, key = JSON.stringify([s.scene, roulette, items]);
-      if (key === cacheKey && cache) return cache;
+      const items = s.items, key = JSON.stringify([s.scene, roulette, items, s.theme]);
+      if (key === cacheKey && cache2) return cache2;
       cacheKey = key;
-      cache = document.createElement("canvas");
-      cache.width = 1080;
-      cache.height = 1080;
+      cache2 = document.createElement("canvas");
+      cache2.width = 1080;
+      cache2.height = 1080;
       const main = ctx;
-      ctx = cache.getContext("2d");
+      ctx = cache2.getContext("2d");
       ctx.scale(1.5, 1.5);
       ctx.translate(360, 360);
       if (roulette) {
@@ -470,8 +1480,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         circle(0, 0, R - 15, null, "#7c4d90", 4);
         circle(0, 0, R - 22, null, "#f4d5ec", 2);
         for (let i = 0; i < 6; i++) {
-          const a = (i + 0.5) * TAU / 6 - Math.PI, x = Math.cos(a) * 202, y = Math.sin(a) * 202, item = items[i];
-          const exit = item.kind === "exit";
+          const a = (i + 0.5) * TAU2 / 6 - Math.PI, x = Math.cos(a) * 202, y = Math.sin(a) * 202, item2 = items[i];
+          const exit = item2.kind === "exit";
           circle(x, y, 84, "#724272", "#f7d4ed", 3);
           circle(x, y, 75, exit ? "#eebf69" : "#4d2b5b", exit ? "#ffeac4" : "#b58bca", 4);
           const inset = ctx.createRadialGradient(x - 16, y - 20, 0, x, y, 76);
@@ -484,18 +1494,40 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           if (exit) {
             icon("heart", 0, -15, 43);
             text("EXIT", 0, 30, 27, P.cream, 1e3, true);
-          } else if (item.kind === "total") {
+          } else if (item2.kind === "total") {
             text("\xD72", 0, -9, 46, P.gold, 1e3, true);
             text("TOTAL", 0, 32, 16, "#f9dff4");
           } else {
-            text("$" + item.value, 0, 0, fit("$" + item.value, 46, 126), P.cream, 1e3, true);
+            text("$" + item2.value, 0, 0, fit("$" + item2.value, 46, 126), P.cream, 1e3, true);
           }
           ctx.restore();
         }
         for (let i = 0; i < 6; i++) {
-          const a = i * TAU / 6 - Math.PI;
+          const a = i * TAU2 / 6 - Math.PI;
           circle(Math.cos(a) * 277, Math.sin(a) * 277, 6, "#ffe6f4", "#734b88", 2);
         }
+      } else if (isExtra(s.scene)) {
+        const def2 = EXTRA_MODES[s.scene], n = items.length;
+        for (let i = 0; i < n; i++) {
+          const a = i * TAU2 / n - Math.PI, b = a + TAU2 / n, m = (a + b) / 2, item2 = items[i];
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, R, a, b);
+          ctx.closePath();
+          ctx.fillStyle = def2.colors[i % 2];
+          ctx.fill();
+          ctx.lineWidth = 2.3;
+          ctx.strokeStyle = "#ffe9dc";
+          ctx.stroke();
+          ctx.save();
+          ctx.translate(Math.cos(m) * 247, Math.sin(m) * 247);
+          ctx.rotate(m + Math.PI / 2);
+          pixelSprite(ctx, def2.art, 0, -37, n > 8 ? 36 : 42, item2.runner ?? item2.charm ?? i % 3);
+          text(item2.label, 0, 1, fit(item2.label, n > 8 ? 29 : 33, n > 8 ? 132 : 165), P.cream, 1e3, true);
+          text(item2.sub, 0, 34, n > 8 ? 13 : 15, P.cream, 1e3, true);
+          ctx.restore();
+        }
+        circle(0, 0, R, null, "#67435e", 6);
       } else if (s.scene === "rent") {
         circle(0, 0, R, "#8ab3a8", "#e8e2bc", 4);
         circle(0, 0, 139, "#6c537b", "#e9c8df", 6);
@@ -503,7 +1535,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         circle(0, 0, 116, null, "#e8cddd", 3);
         ctx.setLineDash([]);
         for (let i = 0; i < items.length; i++) {
-          const a = i * TAU / 6 - Math.PI, b = a + TAU / 6, m = (a + b) / 2, item = items[i];
+          const a = i * TAU2 / 6 - Math.PI, b = a + TAU2 / 6, m = (a + b) / 2, item2 = items[i];
           ctx.beginPath();
           ctx.arc(0, 0, R - 7, a + 0.025, b - 0.025);
           ctx.arc(0, 0, 148, b - 0.025, a + 0.025, true);
@@ -516,16 +1548,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ctx.save();
           ctx.translate(Math.cos(m) * 221, Math.sin(m) * 221);
           ctx.rotate(m + Math.PI / 2);
-          text(item.name, 0, -68, 17, P.cream, 1e3, true);
-          house(0, -15, 76, item.level, i);
-          text(item.level ? "RENT $" + item.rent : "+$" + item.value + " RENT", 0, 47, fit(item.level ? "RENT $" + item.rent : "+$" + item.value + " RENT", 21, 153), P.cream, 1e3, true);
-          if (item.level) text("LV " + item.level, 0, 71, 13, P.gold, 1e3, true);
+          text(item2.name, 0, -68, 17, P.cream, 1e3, true);
+          house(0, -15, 76, item2.level, i);
+          text(item2.level ? "RENT $" + item2.rent : "+$" + item2.value + " RENT", 0, 47, fit(item2.level ? "RENT $" + item2.rent : "+$" + item2.value + " RENT", 21, 153), P.cream, 1e3, true);
+          if (item2.level) text("LV " + item2.level, 0, 71, 13, P.gold, 1e3, true);
           ctx.restore();
         }
       } else if (s.scene === "gumball") {
         circle(0, 0, R, "#dec7e9", "#fff0dc", 4);
         for (let i = 0; i < items.length; i++) {
-          const a = i * TAU / 9 - Math.PI, b = a + TAU / 9, m = (a + b) / 2, item = items[i];
+          const a = i * TAU2 / 9 - Math.PI, b = a + TAU2 / 9, m = (a + b) / 2, item2 = items[i];
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.arc(0, 0, R - 4, a, b);
@@ -538,20 +1570,20 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ctx.save();
           ctx.translate(Math.cos(m) * 222, Math.sin(m) * 222);
           ctx.rotate(m + Math.PI / 2);
-          candy(0, -14, 41, item.color);
-          text("$" + item.value, 0, 52, fit("$" + item.value, 31, 115), P.cream, 1e3, true);
+          candy(0, -14, 41, item2.color);
+          text("$" + item2.value, 0, 52, fit("$" + item2.value, 31, 115), P.cream, 1e3, true);
           ctx.restore();
         }
         circle(0, 0, R - 11, null, "#fff2f866", 7);
       } else {
         const n = items.length;
         for (let i = 0; i < n; i++) {
-          const a = i * TAU / n - Math.PI, b = (i + 1) * TAU / n - Math.PI, m = (a + b) / 2, item = items[i];
+          const a = i * TAU2 / n - Math.PI, b = (i + 1) * TAU2 / n - Math.PI, m = (a + b) / 2, item2 = items[i];
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.arc(0, 0, R, a, b);
           ctx.closePath();
-          ctx.fillStyle = i % 2 ? P.lilac : "#ce6ca1";
+          ctx.fillStyle = i % 2 ? P.lilac : P.pink;
           ctx.fill();
           ctx.lineWidth = 2.4;
           ctx.strokeStyle = "#ffe9da";
@@ -559,13 +1591,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ctx.save();
           ctx.translate(Math.cos(m) * 234, Math.sin(m) * 234);
           ctx.rotate(m + Math.PI / 2);
-          if (item.kind === "cash") text("$" + item.value, 0, 0, fit("$" + item.value, 47, 113), P.cream, 1e3, true);
-          if (item.kind === "boost") {
+          if (item2.kind === "cash") text("$" + item2.value, 0, 0, fit("$" + item2.value, 47, 113), P.cream, 1e3, true);
+          if (item2.kind === "boost") {
             text("\xD72", 0, -10, 43, P.gold, 1e3, true);
             text("NEXT CASH", 0, 24, 14, P.cream, 1e3, true);
           }
-          if (item.kind === "bonus") {
-            text("$" + item.value, 0, -12, fit("$" + item.value, 43, 113), P.cream, 1e3, true);
+          if (item2.kind === "bonus") {
+            text("$" + item2.value, 0, -12, fit("$" + item2.value, 43, 113), P.cream, 1e3, true);
             text("+1 SPIN", 0, 24, 17, P.cream, 1e3, true);
           }
           ctx.restore();
@@ -574,7 +1606,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         circle(0, 0, R - 7, null, "#f5bcdf55", 3);
       }
       ctx = main;
-      return cache;
+      return cache2;
     }
     function glowStroke(color, width = 3, blur = 18) {
       ctx.strokeStyle = color;
@@ -593,22 +1625,22 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.shadowColor = "#130b2188";
       ctx.shadowBlur = 25;
       ctx.shadowOffsetY = 12;
-      circle(0, 0, 344, "#7d4b83", "#fbe5d6", 5);
+      circle(0, 0, 344, P.ink, P.cream, 5);
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
-      circle(0, 0, 336, "#deb8eb", "#f0d9f7", 3);
-      circle(0, 0, 323, "#5b315c", "#8b5293", 3);
+      circle(0, 0, 336, tint(P.lilac, 0.25), tint(P.lilac, 0.55), 3);
+      circle(0, 0, 323, P.ink, P.pink, 3);
       ctx.save();
       ctx.rotate(angle * Math.PI / 180);
       ctx.drawImage(image, -360, -360, 720, 720);
       if (s.selected !== null && !s.motion) {
         circle(0, 0, R, "#26132a66");
-        const n = s.items.length, i = s.selected, a = i * TAU / n - Math.PI, b = a + TAU / n;
+        const n = s.items.length, i = s.selected, a = i * TAU2 / n - Math.PI, b = a + TAU2 / n;
         ctx.save();
         ctx.beginPath();
         if (roulette) {
           const m = (a + b) / 2;
-          ctx.arc(Math.cos(m) * 202, Math.sin(m) * 202, 79, 0, TAU);
+          ctx.arc(Math.cos(m) * 202, Math.sin(m) * 202, 79, 0, TAU2);
         } else {
           ctx.moveTo(0, 0);
           ctx.arc(0, 0, R - 6, a, b);
@@ -620,7 +1652,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         ctx.beginPath();
         if (roulette) {
           const m = (a + b) / 2;
-          ctx.arc(Math.cos(m) * 202, Math.sin(m) * 202, 80, 0, TAU);
+          ctx.arc(Math.cos(m) * 202, Math.sin(m) * 202, 80, 0, TAU2);
         } else {
           ctx.moveTo(0, 0);
           ctx.arc(0, 0, R - 5, a, b);
@@ -631,10 +1663,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.restore();
       const count = roulette ? 30 : 48;
       for (let i = 0; i < count; i++) {
-        const a = i * TAU / count, light = s.reduced ? i % 3 === 0 : (Math.floor(t / 120) + i) % 7 < 3;
+        const a = i * TAU2 / count, light = s.reduced ? i % 3 === 0 : (Math.floor(t / 120) + i) % 7 < 3;
         ctx.shadowBlur = light ? 9 : 0;
         ctx.shadowColor = "#ffeab5";
-        circle(Math.cos(a) * 329, Math.sin(a) * 329, roulette ? 3.5 : 3.1, light ? "#fff4d7" : "#d98db4");
+        circle(Math.cos(a) * 329, Math.sin(a) * 329, roulette ? 3.5 : 3.1, light ? P.cream : P.pink);
       }
       ctx.shadowBlur = 0;
       if (s.scene === "gumball") {
@@ -646,14 +1678,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         ctx.stroke();
         ctx.restore();
       }
-      const hub = ctx.createLinearGradient(-70, -70, 70, 70);
-      hub.addColorStop(0, "#f2c8e4");
-      hub.addColorStop(1, "#ac87d0");
-      circle(0, 0, 88, "#8e477b", "#f8d0e5", 3);
-      circle(0, 0, 79, hub, "#fff0dc", 5);
-      circle(0, 0, 70, null, "#fff4ea66", 2);
-      text("SCAM", 0, -14, 26, P.cream, 1e3, true);
-      text("WHEEL", 0, 17, 25, P.cream, 1e3, true);
+      if (!isExtra(s.scene)) {
+        const hub = ctx.createLinearGradient(-70, -70, 70, 70);
+        hub.addColorStop(0, tint(P.pink, 0.6));
+        hub.addColorStop(1, P.lilac);
+        circle(0, 0, 88, P.pink, tint(P.pink, 0.65), 3);
+        circle(0, 0, 79, hub, "#fff0dc", 5);
+        circle(0, 0, 70, null, "#fff4ea66", 2);
+        text("SCAM", 0, -14, 26, P.cream, 1e3, true);
+        text("WHEEL", 0, 17, 25, P.cream, 1e3, true);
+      }
       ctx.restore();
       ctx.save();
       ctx.translate(CX, CY - 337);
@@ -681,7 +1715,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.lineTo(0, 34);
       ctx.lineTo(-20, 1);
       ctx.closePath();
-      ctx.fillStyle = roulette ? "#efb3d4" : "#bea1e1";
+      ctx.fillStyle = roulette ? P.pink : P.lilac;
       ctx.fill();
       ctx.restore();
     }
@@ -695,13 +1729,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       icon("sparkle", 840, 413 - float, 25, 0, 0.65);
       icon("sparkle", 714, 105 - float, 27, 0, 0.85);
       icon("heart", 327, 805 - float, 24, -0.1, 0.65);
-      if (s.round.mode === "gumball") {
+      if (isExtra(s.scene)) {
+        pixelSprite(ctx, EXTRA_MODES[s.scene].art, 151, 309 + float, 55, 0, -0.15);
+        pixelSprite(ctx, EXTRA_MODES[s.scene].art, 836, 534 - float, 47, 1, 0.15);
+      } else if (s.scene === "gumball") {
         candy(156, 317 + float, 23, 0, -0.2);
         candy(831, 523 - float, 21, 2, 0.2);
-      } else if (s.round.mode === "rent") {
+      } else if (s.scene === "rent") {
         house(153, 310 + float, 35, 2, 0);
         house(832, 532 - float, 33, 1, 4);
-      } else if (s.round.mode === "dice") {
+      } else if (s.scene === "dice") {
         dice(146, 295 + float, 56, 3, -0.16);
         dice(834, 525 - float, 43, 5, 0.22);
       } else {
@@ -719,7 +1756,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (age < 0 || age > 1) return;
       const count = e.kind === "final" ? 65 : e.kind === "exit" ? 38 : 24;
       for (let i = 0; i < count; i++) {
-        const a = i * 2.39996 + (e.seed || 0), v = 80 + i * 37 % 230, delay = i % 6 * 0.025, p = clamp((age - delay) / (1 - delay)), fade = 1 - p;
+        const a = i * 2.39996 + (e.seed || 0), v = 80 + i * 37 % 230, delay = i % 6 * 0.025, p = clamp2((age - delay) / (1 - delay)), fade = 1 - p;
         const x = 500 + Math.cos(a) * v * p * (e.kind === "final" ? 2 : 1.3), y = (e.kind === "final" ? 380 : 360) + Math.sin(a) * v * p + 300 * p * p;
         ctx.save();
         ctx.globalAlpha = fade;
@@ -734,7 +1771,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
     }
     function popPanel(title, main, sub, t, at, accent = P.gold) {
-      const x = clamp((t - at) / 320), scale = reduceMotion ? 1 : 0.9 + 0.1 * ease(x);
+      const x = clamp2((t - at) / 320), scale = reduceMotion ? 1 : 0.9 + 0.1 * ease2(x);
       ctx.save();
       ctx.translate(500, 552);
       ctx.scale(scale, scale);
@@ -755,6 +1792,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     function hud(s, t) {
       const r = s.round;
       if (r.phase === "normal" || r.phase === "activate" || s.overlay?.kind === "intro") return;
+      if (isExtra(r.mode)) {
+        const [label, value] = extraStatus(r);
+        panel(234, 797, 532, 78, "#3c254aee", EXTRA_MODES[r.mode].colors[2], 12);
+        text(r.phase === "complete" ? "ROUND COMPLETE" : r.spins === null ? "KEEP SPINNING" : r.spins + " SPIN" + (r.spins === 1 ? "" : "S") + " LEFT", 361, 821, 15, P.cream);
+        text(EXTRA_MODES[r.mode].name, 361, 849, 17, P.gold);
+        text(label, 637, 819, 13, P.cream);
+        text(value, 637, 848, fit(value, 29, 230), P.gold);
+        return;
+      }
       if (r.mode === "rent") {
         for (let i = 0; i < 6; i++) {
           const x = 252 + i * 99;
@@ -781,7 +1827,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         text(r.spins + " CANDIES LEFT  /  " + r.sets + " SETS CHARGED", 500, 893, 16, P.cream, 900);
         return;
       }
-      const isDice = r.mode === "dice", pulse = s.hudAt && !s.reduced ? Math.sin(clamp((t - s.hudAt) / 700) * Math.PI) * 0.06 : 0;
+      const isDice = r.mode === "dice", pulse = s.hudAt && !s.reduced ? Math.sin(clamp2((t - s.hudAt) / 700) * Math.PI) * 0.06 : 0;
       ctx.save();
       ctx.translate(500, 842);
       ctx.scale(1 + pulse, 1 + pulse);
@@ -798,7 +1844,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (!o) return;
       if (o.kind === "intro") {
         dimWheel(0.64);
-        const age = (t - o.at) / 1e3, k = s.reduced ? 1 : ease(clamp(age * 2));
+        const age = (t - o.at) / 1e3, k = s.reduced ? 1 : ease2(clamp2(age * 2));
         ctx.save();
         ctx.translate(500, 427);
         ctx.scale(k, k);
@@ -820,8 +1866,23 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         text(rolling ? "ROLLING\u2026" : "+" + o.value + " EXTRA SPINS", 500, 566, rolling ? 23 : 33, P.gold, 1e3, true);
         if (!rolling) text(o.start + " starting + " + o.value + " bonus = " + (o.start + o.value) + " spins", 500, 612, 19, P.cream, 800);
       }
+      if (o.kind === "arcade") {
+        const e = o.entry, def2 = EXTRA_MODES[s.round.mode];
+        panel(212, 646, 576, 139, "#32203fee", def2.colors[2], 13);
+        text(e.headline, 500, 670, fit(e.headline, 26, 544), P.cream);
+        text(e.amount ? "+$" + e.amount.toLocaleString("en-US") : "NO ADDED CHARGE", 500, 706, e.amount ? 42 : 24, P.gold);
+        const detail = e.lines.length ? e.lines.map((v) => v.label + ": $" + v.value.toLocaleString("en-US")).join(" + ") : e.detail;
+        const rows = [""];
+        ctx.font = "800 15px Nunito";
+        for (const word of detail.split(" ")) {
+          const i = rows.length - 1;
+          if (ctx.measureText(rows[i] + " " + word).width > 540) rows.push(word);
+          else rows[i] += (rows[i] ? " " : "") + word;
+        }
+        rows.slice(0, 2).forEach((row, i) => text(row, 500, 740 + i * 21, 15, P.cream, 800));
+      }
       if (o.kind === "property") {
-        const e = o.entry, age = clamp((t - o.at) / 900);
+        const e = o.entry, age = clamp2((t - o.at) / 900);
         if (!s.reduced) {
           for (let i = 0; i < 8; i++) icon("sparkle", 500 + (i - 3.5) * 23, 210 - 90 * age + i % 2 * 25, 18 * (1 - age), 0, 1 - age);
         }
@@ -845,9 +1906,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         text("ADDED TO YOUR BILL", 500, 630, 12, P.cream);
       }
       if (o.kind === "candy") {
-        const e = o.entry, p = s.reduced ? 1 : ease(clamp((t - o.at) / 1200)), targetX = 310 + e.color * 190 - 38 + (e.candies[e.color] - 1) * 38;
+        const e = o.entry, p = s.reduced ? 1 : ease2(clamp2((t - o.at) / 1200)), targetX = 310 + e.color * 190 - 38 + (e.candies[e.color] - 1) * 38;
         const x = mix(500, targetX, p) + Math.sin(p * Math.PI) * 110, y = mix(230, 824, p) - Math.sin(p * Math.PI) * 70;
-        candy(x, y, 32 - 19 * p, e.color, s.reduced ? 0 : p * TAU);
+        candy(x, y, 32 - 19 * p, e.color, s.reduced ? 0 : p * TAU2);
         if (p > 0.8) popPanel("CANDY DISPENSED", "+$" + e.base, SWEETS[e.color].name + " collection: " + e.candies[e.color] + " / 3", t, o.at, SWEETS[e.color].color);
       }
       if (o.kind === "match") {
@@ -862,13 +1923,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (o.kind === "popup") popPanel(o.title, o.main, o.sub, t, o.at, o.accent || P.gold);
       if (o.kind === "exit") {
         dimWheel(0.65);
-        const age = clamp((t - o.at) / 500);
+        const age = clamp2((t - o.at) / 500);
         if (!s.reduced) {
           ctx.save();
           ctx.translate(500, 410);
           ctx.rotate(age * 0.3);
           for (let i = 0; i < 12; i++) {
-            ctx.rotate(TAU / 12);
+            ctx.rotate(TAU2 / 12);
             ctx.fillStyle = i % 2 ? "#e795c0" : "#ffd69a";
             ctx.fillRect(110, -5, 60, 10);
           }
@@ -884,7 +1945,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
       if (o.kind === "final") {
         dimWheel(0.6);
-        const k = s.reduced ? 1 : 0.94 + 0.06 * ease(clamp((t - o.at) / 550));
+        const k = s.reduced ? 1 : 0.94 + 0.06 * ease2(clamp2((t - o.at) / 550));
         ctx.save();
         ctx.translate(500, 439);
         ctx.scale(k, k);
@@ -900,12 +1961,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         text("YOU\u2019VE BEEN SCAMMED", 0, -97, 24, "#f6cee8");
         const amount = "$" + s.round.total.toLocaleString("en-US"), size = Math.min(97, 450 / (amount.length * 0.6));
         text(amount, 0, -14, size, P.gold);
-        text({ dice: "Those extra spins added up.", roulette: "The exit comes with a bill.", rent: "Free to visit. Expensive to stay.", gumball: "A sweet tooth. A very sour bill." }[s.round.mode], 0, 64, 21, P.cream, 800);
+        text({ dice: "Those extra spins added up.", roulette: "The exit comes with a bill.", rent: "Free to visit. Expensive to stay.", gumball: "A sweet tooth. A very sour bill." }[s.round.mode] || "Cute game. Quite a bill.", 0, 64, 21, P.cream, 800);
         text(o.detail, 0, 108, 16, "#d4b7e1", 800);
         ctx.restore();
       }
     }
     function draw(s, t) {
+      Object.assign(P, s.scene === "normal" ? s.theme || THEME : THEME);
       reduceMotion = s.reduced;
       ctx.setTransform(dpi, 0, 0, dpi, 0, 0);
       ctx.clearRect(0, 0, 1e3, 980);
@@ -919,23 +1981,28 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         icon("heart", 500, 70, 29);
       }
       decor(s, t, roulette);
-      const trans = s.transformAt ? ease(clamp((t - s.transformAt) / 850)) : 1;
+      const trans = s.transformAt ? ease2(clamp2((t - s.transformAt) / 850)) : 1;
       if (!s.reduced && trans < 1) {
         ctx.save();
         ctx.translate(CX, CY);
-        ctx.rotate(trans * TAU);
+        ctx.rotate(trans * TAU2);
         ctx.strokeStyle = "#ffe3bd";
         ctx.lineWidth = 4;
         ctx.setLineDash([12, 22]);
         ctx.beginPath();
-        ctx.arc(0, 0, 350 + Math.sin(trans * Math.PI) * 20, 0, TAU);
+        ctx.arc(0, 0, 350 + Math.sin(trans * Math.PI) * 20, 0, TAU2);
         ctx.stroke();
         ctx.restore();
       }
       disc(s, t, roulette, 1, s.reduced ? 1 : 0.97 + 0.03 * trans);
+      if (isExtra(s.scene)) drawScene(ctx, s, t);
       hud(s, t);
       overlay(s, t);
       particles(s, t);
+      if (s.round.scripted) {
+        panel(374, 18, 252, 38, "#3c254aee", P.gold, 8);
+        text("SCRIPTED SHOWCASE", 500, 37, 16, P.gold);
+      }
       if (s.waiting) {
         dimWheel(0.6);
         text("Waiting for the controls\u2026", 500, 435, 24);
@@ -944,11 +2011,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     return { draw };
   }
 
-  // vendor/model/units.ts
+  // arcade/vendor/model/units.ts
   var deg = (n) => n;
   var normalizeDeg = (d) => (d % 360 + 360) % 360;
 
-  // vendor/model/geometry.ts
+  // arcade/vendor/model/geometry.ts
   function sliceCenterDeg(l) {
     return normalizeDeg(deg((l.startTurn + l.sizeTurn / 2) * 360));
   }
@@ -986,7 +2053,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     return Math.min(configuredBandDeg, MAX_SEAM_FRACTION * smallerArcDeg);
   }
 
-  // vendor/model/spin.ts
+  // arcade/vendor/model/spin.ts
   var SPIN_TURNS_MIN = 4;
   var SPIN_TURNS_MAX = 8;
   function spinTurns(force) {
@@ -1013,7 +2080,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     return currentDeg + spins * 360 + delta;
   }
 
-  // src/app.mjs
+  // arcade/src/app.mjs
   var $ = (id) => document.getElementById(id);
   var canvas = $("game");
   var renderer = makeRenderer(canvas);
@@ -1036,22 +2103,65 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     if (typeof BroadcastChannel !== "undefined") channel = new BroadcastChannel("faith-scam-duo-v1-" + room);
   } catch {
   }
+  var config;
+  try {
+    config = readConfig(localStorage);
+  } catch {
+    config = readConfig({ getItem: () => null });
+  }
+  var selectedMode = MODES[params.get("mode")] ? params.get("mode") : config.mode;
   var epoch = 0;
   var ready = false;
   var auto = false;
-  var sound = true;
+  var sound = config.sound;
   var audio;
   var viewWindow;
-  var prices = { ...DEFAULTS };
+  var prices = { ...config.profiles[config.stake] };
   var lastTick = 0;
   var lastSector = -1;
+  var orderedModes = ["dice", "roulette", "rent", "gumball", ...Object.keys(EXTRA_MODES)];
+  $("mode-select").add(new Option("Surprise me - discover together", "surprise"));
+  for (const mode of orderedModes) {
+    $("mode-select").add(new Option(MODES[mode].name, mode));
+    const button = document.createElement("button");
+    button.className = "mode";
+    button.dataset.mode = mode;
+    button.textContent = MODES[mode].name;
+    button.title = MODES[mode].rule;
+    $("mode-cards").append(button);
+  }
+  var nextMystery = makeDiscoveryDeck(orderedModes, () => random());
+  function persist() {
+    config.sound = sound;
+    config.mode = selectedMode;
+    config.profiles[config.stake] = { ...prices };
+    let saved = false;
+    try {
+      saved = saveConfig(localStorage, config);
+    } catch {
+    }
+    $("save-status").textContent = saved ? "Saved in this browser. Save a settings file to move browsers." : "Browser storage unavailable. Save a settings file to keep changes.";
+  }
+  function configFields() {
+    for (const key of ["cash", "bonus", "spins"]) $(key).value = prices[key];
+    for (const key of ["pink", "lilac", "gold"]) $("theme-" + key).value = config.theme[key];
+    $("volume").value = config.volume;
+    $("theme-preset").value = Object.keys(PRESETS).find((k) => JSON.stringify(PRESETS[k]) === JSON.stringify(config.theme)) || "custom";
+    $("sound").textContent = sound ? "Sound on" : "Sound off";
+    $("sound").setAttribute("aria-pressed", String(sound));
+    document.documentElement.style.setProperty("--wheel-pink", config.theme.pink);
+    document.documentElement.style.setProperty("--wheel-lilac", config.theme.lilac);
+  }
+  configFields();
   var random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
   var money = (n) => "$" + n.toLocaleString("en-US");
-  function initial(mode = "dice", scripted = false) {
-    const round = createRound(mode, prices, $("quick").checked, scripted);
-    return { round, items: board({ ...round, phase: "normal" }), scene: "normal", rotation: 0, motion: null, selected: null, overlay: null, effect: null, busy: false, reduced, transformAt: 0, hudAt: 0, tickAt: 0, waiting: viewer, status: "", error: null };
+  function initial(mode = selectedMode, scripted = false) {
+    const round = createRound(mode === "surprise" ? "dice" : mode, prices, $("quick").checked, scripted);
+    round.mystery = mode === "surprise";
+    round.revealed = false;
+    return { round, items: board({ ...round, phase: "normal" }), scene: "normal", rotation: 0, motion: null, selected: null, overlay: null, effect: null, busy: false, reduced, theme: { ...config.theme }, transformAt: 0, hudAt: 0, tickAt: 0, waiting: viewer, status: "", error: null };
   }
-  var state = initial(MODES[params.get("mode")] ? params.get("mode") : "dice");
+  var state = initial();
   function tone(freq, len = 0.09, type = "triangle", volume = 0.025, delay = 0) {
     if (!sound || viewer || !audio) return;
     const token = epoch;
@@ -1061,7 +2171,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       o.type = type;
       o.frequency.setValueAtTime(freq, t);
       g.gain.setValueAtTime(1e-4, t);
-      g.gain.linearRampToValueAtTime(volume, t + 8e-3);
+      g.gain.linearRampToValueAtTime(Math.max(1e-4, volume * config.volume / 100), t + 8e-3);
       g.gain.exponentialRampToValueAtTime(1e-4, t + len);
       o.connect(g);
       g.connect(audio.destination);
@@ -1123,7 +2233,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     if (state.busy) return state.status || "Let it roll\u2026";
     if (r.phase === "complete") return r.reason === "limit" ? "Round limit reached. Your bill is settled." : "Round complete. Play again for a new result.";
     if (r.phase === "normal") return "Opening spin " + (r.normal + 1) + " of 2.";
-    if (r.phase === "activate") return "The next spin activates " + MODES[r.mode].name + ".";
+    if (r.phase === "activate") return r.mystery ? "The next spin reveals your mystery scam." : "The next spin activates " + MODES[r.mode].name + ".";
+    if (isExtra(r.mode)) return (r.spins === null ? "Keep spinning. " : r.spins + " spins left. ") + MODES[r.mode].short;
     if (r.mode === "rent") return r.spins + " spins left. Build one property, then pay the whole street.";
     if (r.mode === "gumball") return r.spins + " candies left. Match three of a colour for a set bonus.";
     return r.mode === "dice" ? r.spins + " cash spins left. " + (r.mult > 1 ? "Next cash pays \xD7" + r.mult + "." : "Keep the bonuses coming.") : "Still in. Spin again to find EXIT.";
@@ -1138,27 +2249,47 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     canvas.dataset.overlay = state.overlay?.kind || "none";
     canvas.dataset.busy = state.busy;
     canvas.dataset.scripted = state.round.scripted;
-    canvas.setAttribute("aria-label", MODES[state.round.mode].name + ". " + caption() + " Total " + money(state.round.total));
+    canvas.setAttribute("aria-label", (state.round.mystery && !state.round.revealed ? "Mystery scam" : MODES[state.round.mode].name) + ". " + caption() + " Total " + money(state.round.total));
     if (viewer) return;
-    const r = state.round;
+    const r = state.round, hidden = r.mystery && !r.revealed;
+    $("mode-select").value = selectedMode;
+    $("mode-select").disabled = state.busy || auto;
+    $("stakes-low").setAttribute("aria-pressed", String(config.stake === "low"));
+    $("stakes-high").setAttribute("aria-pressed", String(config.stake === "high"));
+    $("stakes-low").disabled = $("stakes-high").disabled = state.busy || auto;
+    $("stakes-summary").textContent = (config.stake === "low" ? "LOW" : "HIGH") + " STAKES / $" + prices.cash + " cash / $" + prices.bonus + " bonus / " + prices.spins + " base spins";
+    $("autoplay").disabled = !ready || auto && r.scripted || state.busy && !auto;
+    $("autoplay").textContent = auto && !r.scripted ? "Pause after spin" : "Play random round";
+    $("appearance").querySelectorAll("input,button,select").forEach((el) => el.disabled = state.busy || auto);
     document.querySelectorAll(".mode").forEach((b) => {
       b.disabled = state.busy || auto;
-      b.classList.toggle("active", b.dataset.mode === r.mode);
-      b.setAttribute("aria-pressed", String(b.dataset.mode === r.mode));
+      b.classList.toggle("active", b.dataset.mode === selectedMode);
+      b.setAttribute("aria-pressed", String(b.dataset.mode === selectedMode));
     });
-    $("mode-tag").textContent = MODES[r.mode].tag;
-    $("rule").textContent = MODES[r.mode].rule;
+    $("mode-tag").textContent = hidden ? "DISCOVER THE SCAM TOGETHER" : MODES[r.mode].tag;
+    $("rule").textContent = hidden ? "Two normal spins. Then one of 20 scams transforms the wheel. Every scam appears before the mystery bag repeats." : MODES[r.mode].rule;
     $("total").textContent = money(r.total);
     $("power-label").textContent = { dice: "NEXT CASH", roulette: "ENDING TOTAL", rent: "STREET RENT", gumball: "SETS CHARGED" }[r.mode];
     $("power").textContent = r.mode === "rent" ? money(r.rents.reduce((a, b) => a + b, 0)) : r.mode === "gumball" ? String(r.sets) : "\xD7" + r.mult;
+    if (isExtra(r.mode) && !hidden) {
+      const [label, value] = extraStatus(r);
+      $("power-label").textContent = label;
+      $("power").textContent = value;
+    }
+    if (hidden) {
+      $("power-label").textContent = "MYSTERY SCAM";
+      $("power").textContent = "?";
+    }
+    $("inspect-result").hidden = r.phase !== "complete" || state.busy;
+    $("inspect-result").textContent = state.overlay?.kind === "final" ? "See final wheel" : "Show final bill";
     $("status").textContent = caption();
     $("spin").disabled = state.busy || auto || !ready;
     $("spin").replaceChildren(document.createTextNode(r.phase === "complete" ? "Play again" : r.scripted ? "Next demo spin" : "Spin"));
     const key = document.createElement("span");
     key.textContent = "SPACE";
     $("spin").append(key);
-    $("showcase").disabled = !ready || state.busy && !auto;
-    $("showcase").textContent = auto ? "\u2161 Pause after spin" : r.scripted && r.phase !== "complete" ? "\u25B6 Resume showcase" : "\u25B6 Play showcase";
+    $("showcase").disabled = !ready || auto && !r.scripted || state.busy && !auto;
+    $("showcase").textContent = auto && r.scripted ? "\u2161 Pause after spin" : r.scripted && r.phase !== "complete" ? "\u25B6 Resume showcase" : "\u25B6 Play showcase";
     $("quick").disabled = state.busy || auto;
     $("demo-note").textContent = r.scripted ? "SCRIPTED SHOWCASE \xB7 A planned bonus chain so you can see every effect. Reset to return to random spins." : "Showcase plays a scripted bonus chain automatically. Spin gives random results.";
     $("demo-note").classList.toggle("scripted", r.scripted);
@@ -1172,24 +2303,37 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     r.ledger.forEach((e, i) => {
       const li = document.createElement("li"), label = document.createElement("span"), value = document.createElement("strong");
       label.textContent = i + 1 + ". " + e.label;
-      value.textContent = e.kind === "exit" ? money(e.before) + " \u2192 " + money(e.after) : e.amount ? "+" + money(e.amount) : "\xD7" + Math.min(64, e.mult * 2);
+      value.textContent = e.kind === "arcade" ? money(e.amount) : e.kind === "exit" ? money(e.before) + " \u2192 " + money(e.after) : e.amount ? "+" + money(e.amount) : "\xD7" + Math.min(64, e.mult * 2);
+      if (e.lines?.length) {
+        const detail = document.createElement("small");
+        detail.textContent = e.lines.map((v) => v.label + ": " + money(v.value)).join(" + ");
+        label.append(detail);
+      }
       li.append(label, value);
       ledger.append(li);
     });
     $("history-count").textContent = r.ledger.length;
-    $("mode-settings-note").textContent = r.mode === "rent" ? "Rent Free uses starting spins + 1. Cash sets the three rent tiers: half cash, cash, and one-and-a-half cash. Bonus cash is unused." : r.mode === "gumball" ? "Gumball Ransom uses starting spins + 3 draws. Every candy costs the cash amount; Berry/Violet/Mint trios add 8x/10x/12x cash. Bonus cash is unused." : "Dice Boost adds the die roll to starting spins. Russian Roulette ends only at EXIT. Boosts stop at x64; 60 landings settles either round.";
+    $("mode-settings-note").textContent = hidden ? "These base amounts and spins apply to whichever scam is revealed. Its live counter shows the resulting round length or target." : isExtra(r.mode) ? "Cash and bonus amounts scale this scam. Base spins set its round length, target distance or boss health. Its live counter shows the resulting limit." : r.mode === "rent" ? "Rent Free uses starting spins + 1. Cash sets the three rent tiers: half cash, cash, and one-and-a-half cash. Bonus cash is unused." : r.mode === "gumball" ? "Gumball Ransom uses starting spins + 3 draws. Every candy costs the cash amount; Berry/Violet/Mint trios add 8x/10x/12x cash. Bonus cash is unused." : "Dice Boost adds the die roll to starting spins. Russian Roulette ends only at EXIT. Boosts stop at x64; 60 landings settles either round.";
     publish();
   }
-  function reset(mode = state.round.mode, scripted = false) {
+  function reset(mode = selectedMode, scripted = false) {
+    selectedMode = mode;
+    try {
+      const url = new URL(location.href);
+      url.searchParams.set("mode", mode);
+      history.replaceState(null, "", url);
+    } catch {
+    }
     epoch++;
     auto = false;
     state = initial(mode, scripted);
     lastSector = -1;
+    persist();
     ui();
   }
   var ms = (n) => reduced ? Math.min(n, 350) : n;
   function wait(n, token) {
-    return new Promise((resolve, reject) => setTimeout(() => token === epoch ? resolve() : reject(new Error("cancelled")), ms(n)));
+    return new Promise((resolve, reject) => setTimeout(() => token === epoch ? resolve() : reject(new Error("cancelled")), n));
   }
   function popup(title, main, sub, accent) {
     state.overlay = { kind: "popup", title, main, sub, accent, at: Date.now() };
@@ -1200,6 +2344,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     publish();
   }
   async function activateScam(token) {
+    if (state.round.mystery && !state.round.revealed) {
+      state.round = { ...state.round, mode: nextMystery(), revealed: true };
+    }
     const mode = state.round.mode;
     state.overlay = { kind: "intro", name: MODES[mode].name, at: Date.now() };
     state.status = "Scam activated.";
@@ -1207,7 +2354,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     ui();
     await wait(1750, token);
     state.scene = mode;
-    state.items = board({ ...state.round, phase: "active" });
+    state.items = board({ ...state.round, ...isExtra(mode) ? startExtra(state.round) : {}, phase: "active" });
     state.transformAt = Date.now();
     state.rotation = 0;
     state.selected = null;
@@ -1257,9 +2404,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (landing.kind !== "winner" || landing.slice !== index) throw new Error("Landing does not match the slice");
       const target = nextRotation(state.rotation, landing.restAngle, spinTurns(0.3));
       state.motion = { from: state.rotation, to: target, at: Date.now(), duration: ms(5600) };
-      state.status = r.phase === "normal" ? "Opening spin " + (r.normal + 1) + "\u2026" : r.mode === "dice" ? "Watch the next cash boost\u2026" : r.mode === "rent" ? "Where are we building?" : r.mode === "gumball" ? "Which sweet joins the collection?" : "Cash, multiplier\u2026 or EXIT?";
+      state.status = r.phase === "normal" ? "Opening spin " + (r.normal + 1) + "\u2026" : r.mode === "dice" ? "Watch the next cash boost\u2026" : r.mode === "rent" ? "Where are we building?" : r.mode === "gumball" ? "Which sweet joins the collection?" : isExtra(r.mode) ? MODES[r.mode].short : "Cash, multiplier\u2026 or EXIT?";
       ui();
-      await wait(5600, token);
+      await wait(ms(5600), token);
       state.rotation = target;
       state.motion = null;
       state.selected = index;
@@ -1268,10 +2415,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       canvas.dataset.pointer = String(actual);
       canvas.dataset.rotation = String(target);
       if (actual !== index) throw new Error("Pointer did not reach the result");
-      state.round = land(r, index);
+      state.round = land(r, index, random);
       const e = state.round.last;
       state.hudAt = Date.now();
-      if (e.kind === "rent") {
+      if (e.kind === "arcade") {
+        state.items = board(state.round);
+        state.overlay = { kind: "arcade", entry: e, at: Date.now() };
+        state.status = e.headline + " " + e.detail;
+        soundFor(e.amount > r.prices.cash * 3 ? "bonus" : "cash");
+        burst(e.amount > r.prices.cash * 3 ? "bonus" : "cash");
+        ui();
+        await wait(2900, token);
+      } else if (e.kind === "rent") {
         state.items = board(state.round);
         soundFor("bonus");
         burst("bonus");
@@ -1326,7 +2481,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         await wait(e.mult > 1 ? 1800 : 1350, token);
       }
       if (state.round.phase === "complete") {
-        state.overlay = { kind: "final", detail: state.round.reason === "limit" ? "Round limit reached \xB7 multiplier collected" : state.round.mode === "rent" ? state.round.step + " spins - rent charged after every build" : state.round.mode === "gumball" ? state.round.step + " candies + " + state.round.sets + " set bonuses" : state.round.mode === "dice" ? state.round.ledger.length + " landings \xB7 every cash hit counted" : money(e.before) + " \xD7 " + r.mult + " = " + money(state.round.total), at: Date.now() };
+        state.overlay = { kind: "final", detail: state.round.reason === "limit" ? "Round limit reached - charges settled" : isExtra(state.round.mode) ? state.round.step + " spins - every charge shown in round history" : state.round.mode === "rent" ? state.round.step + " spins - rent charged after every build" : state.round.mode === "gumball" ? state.round.step + " candies + " + state.round.sets + " set bonuses" : state.round.mode === "dice" ? state.round.ledger.length + " landings \xB7 every cash hit counted" : money(e.before) + " \xD7 " + r.mult + " = " + money(state.round.total), at: Date.now() };
         burst("final");
         soundFor("final");
       } else state.overlay = null;
@@ -1342,14 +2497,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ui();
     }
   }
-  async function playShowcase() {
+  async function playShowcase(scripted = true) {
     if (auto) {
       auto = false;
       ui();
       return;
     }
     if (state.busy || !ready) return;
-    if (!state.round.scripted || state.round.phase === "complete") reset(state.round.mode, true);
+    if (state.round.scripted !== scripted || state.round.phase === "complete") reset(selectedMode, scripted);
     auto = true;
     const token = epoch;
     ui();
@@ -1369,19 +2524,32 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ui();
     }
   }
+  $("inspect-result").addEventListener("click", () => {
+    if (state.overlay?.kind === "final") {
+      state.finalOverlay = state.overlay;
+      state.overlay = null;
+    } else state.overlay = state.finalOverlay;
+    ui();
+  });
   $("spin").addEventListener("click", () => {
     if (state.round.phase === "complete") reset();
     runStep();
   });
-  $("showcase").addEventListener("click", playShowcase);
+  $("showcase").addEventListener("click", () => playShowcase(true));
+  $("autoplay").addEventListener("click", () => playShowcase(false));
   $("reset").addEventListener("click", () => reset());
-  document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => reset(b.dataset.mode)));
+  document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => {
+    $("mode-select").value = b.dataset.mode;
+    reset(b.dataset.mode);
+    $("mode-cards").closest("details").open = false;
+  }));
   $("quick").addEventListener("change", () => reset());
   $("sound").addEventListener("click", () => {
     sound = !sound;
     $("sound").textContent = sound ? "Sound on" : "Sound off";
     $("sound").setAttribute("aria-pressed", String(sound));
     if (sound) unlockSound();
+    persist();
   });
   $("apply").addEventListener("click", () => {
     const next = { cash: Number($("cash").value), bonus: Number($("bonus").value), spins: Number($("spins").value) };
@@ -1392,6 +2560,64 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     prices = next;
     $("settings-error").textContent = "Settings applied.";
     reset();
+  });
+  $("mode-select").addEventListener("change", () => reset($("mode-select").value));
+  for (const stake of ["low", "high"]) $("stakes-" + stake).addEventListener("click", () => {
+    if (config.stake === stake) return;
+    config.profiles[config.stake] = { ...prices };
+    config.stake = stake;
+    prices = { ...config.profiles[stake] };
+    configFields();
+    reset();
+  });
+  function applyTheme() {
+    state.theme = { ...config.theme };
+    configFields();
+    persist();
+    publish();
+  }
+  $("theme-preset").addEventListener("change", () => {
+    if (PRESETS[$("theme-preset").value]) {
+      config.theme = { ...PRESETS[$("theme-preset").value] };
+      applyTheme();
+    }
+  });
+  for (const k of ["pink", "lilac", "gold"]) $("theme-" + k).addEventListener("input", () => {
+    config.theme[k] = $("theme-" + k).value;
+    applyTheme();
+  });
+  $("volume").addEventListener("input", () => {
+    config.volume = Number($("volume").value);
+    persist();
+  });
+  $("export-settings").addEventListener("click", () => {
+    persist();
+    const url = URL.createObjectURL(new Blob([JSON.stringify(config, null, 2)], { type: "application/json" })), a = document.createElement("a");
+    a.href = url;
+    a.download = "faith-scam-wheel-settings.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  });
+  $("import-settings").addEventListener("click", () => $("settings-file").click());
+  $("settings-file").addEventListener("change", async () => {
+    const file = $("settings-file").files[0];
+    if (!file) return;
+    try {
+      if (file.size > 1e5) throw new Error("Settings file is too large.");
+      const next = validateConfig(JSON.parse(await file.text()));
+      if (state.busy || auto) throw new Error("Finish the spin before loading settings.");
+      config = next;
+      prices = { ...config.profiles[config.stake] };
+      selectedMode = config.mode;
+      sound = config.sound;
+      configFields();
+      reset();
+      $("save-status").textContent = "Settings loaded and saved.";
+    } catch (e) {
+      $("save-status").textContent = "Could not load settings: " + e.message;
+    } finally {
+      $("settings-file").value = "";
+    }
   });
   $("viewer").addEventListener("click", () => {
     const url = new URL(location.href);

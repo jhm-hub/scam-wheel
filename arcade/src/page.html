@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#21142f"><title>Faith's Arcade - Scam Wheel Demos</title><style>__CSS__</style></head>
+<body><main class="arcade">
+<section class="stage" aria-label="Scam wheel"><canvas id="game" width="1000" height="920" aria-label="Faith's scam wheel"></canvas><div class="stage-mark" aria-hidden="true"><span>FAITH&#8217;S ARCADE</span><span>SCAM COLLECTION</span></div></section>
+<aside class="desk">
+<header><p class="eyebrow">FAITH&#8217;S ARCADE</p><h1>Scam Wheel</h1><p class="intro">Pick a game. Give it a spin.</p></header>
+<div class="selection"><label for="mode-select">CHOOSE A SCAM</label><select id="mode-select"></select><details class="library"><summary>Explore all 20 scams</summary><nav id="mode-cards" class="modes" aria-label="Choose a scam"></nav></details></div>
+<div class="stakes" aria-label="Choose stakes"><button id="stakes-low" aria-pressed="true">Low stakes</button><button id="stakes-high" aria-pressed="false">High stakes</button></div><p id="stakes-summary" class="fine"></p>
+<div class="rulebox"><span class="eyebrow" id="mode-tag"></span><p id="rule"></p></div>
+<div class="readout"><div><span>ROUND TOTAL</span><strong id="total">$0</strong></div><div><span id="power-label">NEXT CASH</span><strong id="power">&#215;1</strong></div></div>
+<div class="progress" id="progress"><span id="step1">1</span><i></i><span id="step2">2</span><i></i><span id="step3">SCAM</span></div>
+<p class="status" id="status" role="status" aria-live="polite">Ready when you are.</p>
+<button class="spin" id="spin">Spin <span>SPACE</span></button>
+<button id="inspect-result" class="autoplay" hidden>See final wheel</button><button id="autoplay" class="autoplay">Play random round</button><div class="secondary"><button id="showcase">&#9654; Play showcase</button><button id="reset" aria-label="Reset round">&#8635; Reset</button></div>
+<p id="demo-note" class="demo-note">Showcase plays a scripted bonus chain automatically. Spin gives random results.</p>
+<label class="skip"><input id="quick" type="checkbox"> Jump straight to the scam</label>
+<div class="utilities"><button id="sound" aria-pressed="true">Sound on</button><button id="viewer">Open clean view</button></div>
+<details id="settings"><summary>Amounts & round settings</summary><div class="fields"><label>Base cash<input id="cash" type="number" min="1" max="1000" step="1" value="10"></label><label>Bonus cash<input id="bonus" type="number" min="1" max="1000" step="1" value="2"></label><label>Base spins<input id="spins" type="number" min="1" max="10" step="1" value="3"></label></div><p class="fine" id="mode-settings-note"></p><p class="fine">Apply starts a fresh round in the selected stakes profile. Both profiles save separately. All rounds have a 60-landing safety limit.</p><button id="apply">Apply settings</button><p id="settings-error" role="alert"></p></details>
+<details id="appearance"><summary>Colours & saved settings</summary><label class="theme-label">Base theme<select id="theme-preset"><option value="sweet">Sweet Talk</option><option value="mint">Mint Arcade</option><option value="royal">Royal Lilac</option><option value="custom">Custom colours</option></select></label><div class="colour-fields"><label>Pink<input type="color" id="theme-pink"></label><label>Lilac<input type="color" id="theme-lilac"></label><label>Accent<input type="color" id="theme-gold"></label></div><p class="fine">The normal wheel uses these colours. Scams have their own scene palettes.</p><label class="theme-label">Sound volume<input type="range" id="volume" min="0" max="100" step="1" value="70"></label><div class="secondary"><button id="export-settings">Save settings file</button><button id="import-settings">Load file</button><input type="file" id="settings-file" accept="application/json,.json" hidden></div><p class="fine" id="save-status" role="status">Settings save in this browser.</p></details>
+<details id="history"><summary>Round history <span id="history-count">0</span></summary><ol id="ledger"></ol></details>
+<footer>Built on Landaire&#8217;s wheel logic &#183; Faith&#8217;s demo collection</footer>
+</aside></main><script>__APP__</script></body></html>

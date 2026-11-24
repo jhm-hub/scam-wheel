@@ -14,3 +14,5 @@ dist/
 
 # fields.json is generated into dist/; ignore a stray root copy
 /fields.json
+
+arcade/checks/engine.mjs

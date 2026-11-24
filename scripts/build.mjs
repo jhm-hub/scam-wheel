@@ -1,3 +1,4 @@
+import { buildArcadePages } from "./build-arcade.mjs";
 import { buildScamPages } from "./build-scam.mjs";
 import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
@@ -48,6 +49,7 @@ if (serve) {
   await esbuild.build(opts);
   await buildScamPages();
   cpSync("demos", "dist/demos", { recursive: true });
+  await buildArcadePages();
   writeFileSync("dist/wheel.html", demoHtml());
   // Keep ordinary-wheel config hashes when following the legacy demo link.
   writeFileSync(
