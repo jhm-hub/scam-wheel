@@ -16,3 +16,5 @@ dist/
 /fields.json
 
 arcade/checks/engine.mjs
+
+.review-arcade/

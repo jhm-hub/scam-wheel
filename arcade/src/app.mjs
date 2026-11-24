@@ -1,3 +1,4 @@
+import { motionClock, sceneTiming } from "./motion.mjs";
 import { MODES, SWEETS, DEFAULTS, createRound, validPrices, board, activate, choose, land } from "./model.mjs";
 import { EXTRA_MODES, isExtra, extraStatus, startExtra } from "./extended.mjs";
 import { THEME, PRESETS, readConfig, saveConfig, validateConfig, makeDiscoveryDeck } from "./config.mjs";
@@ -70,7 +71,7 @@ function initial(mode = selectedMode, scripted = false) {
   const round = createRound(mode === "surprise" ? "dice" : mode, prices, $("quick").checked, scripted);
   round.mystery = mode === "surprise";
   round.revealed = false;
-  return { round, items: board({ ...round, phase: "normal" }), scene: "normal", rotation: 0, motion: null, selected: null, overlay: null, effect: null, busy: false, reduced, theme: { ...config.theme }, transformAt: 0, hudAt: 0, tickAt: 0, waiting: viewer, status: "", error: null };
+  return { round, items: board({ ...round, phase: "normal" }), scene: "normal", rotation: 0, motion: null, selected: null, selection: null, overlay: null, effect: null, busy: false, reduced, theme: { ...config.theme }, transformAt: 0, previousScene: null, hudAt: 0, tickAt: 0, waiting: viewer, status: "", error: null };
 }
 let state = initial();
 function tone(freq, len = 0.09, type = "triangle", volume = 0.025, delay = 0) {
@@ -88,6 +89,7 @@ function tone(freq, len = 0.09, type = "triangle", volume = 0.025, delay = 0) {
     g.connect(audio.destination);
     o.start(t);
     o.stop(t + len + 0.02);
+    o.onended = () => { o.disconnect(); g.disconnect(); };
   }, delay);
 }
 function soundFor(kind) {
@@ -236,6 +238,7 @@ function reset(mode = selectedMode, scripted = false) {
   } catch {
   }
   epoch++;
+  reviewFrames = [];
   auto = false;
   state = initial(mode, scripted);
   lastSector = -1;
@@ -246,12 +249,19 @@ const ms = (n) => reduced ? Math.min(n, 350) : n;
 function wait(n, token) {
   return new Promise((resolve, reject) => setTimeout(() => token === epoch ? resolve() : reject(new Error("cancelled")), n));
 }
+async function dismissOverlay(token) {
+  if (!state.overlay) return;
+  state.overlay = { ...state.overlay, exitAt: motionClock() };
+  publish();
+  await wait(reduced ? 80 : 240, token);
+  state.overlay = null;
+}
 function popup(title, main, sub, accent) {
-  state.overlay = { kind: "popup", title, main, sub, accent, at: Date.now() };
+  state.overlay = { kind: "popup", title, main, sub, accent, at: motionClock() };
   ui();
 }
 function burst(kind) {
-  state.effect = { kind, at: Date.now(), seed: state.round.ledger.length };
+  state.effect = { kind, at: motionClock(), seed: state.round.ledger.length };
   publish();
 }
 async function activateScam(token) {
@@ -259,25 +269,28 @@ async function activateScam(token) {
     state.round = { ...state.round, mode: nextMystery(), revealed: true };
   }
   const mode = state.round.mode;
-  state.overlay = { kind: "intro", name: MODES[mode].name, at: Date.now() };
+  state.overlay = { kind: "intro", name: MODES[mode].name, at: motionClock() };
   state.status = "Scam activated.";
   soundFor("intro");
   ui();
-  await wait(1750, token);
+  await wait(1500, token);
+  await dismissOverlay(token);
+  state.previousScene = { ...state, motion: null, overlay: null, effect: null, previousScene: null };
   state.scene = mode;
   state.items = board({ ...state.round, ...isExtra(mode) ? startExtra(state.round) : {}, phase: "active" });
-  state.transformAt = Date.now();
+  state.transformAt = motionClock();
   state.rotation = 0;
   state.selected = null;
+  state.selection = null;
   if (mode === "dice") {
     const die = state.round.scripted ? 2 : 1 + Math.floor(random() * 6), rollTime = ms(1450);
-    state.overlay = { kind: "die", value: die, start: state.round.prices.spins, rollTime, at: Date.now() };
+    state.overlay = { kind: "die", value: die, start: state.round.prices.spins, rollTime, at: motionClock() };
     state.status = "Rolling the bonus die\u2026";
     ui();
     if (!reduced) for (let i = 0; i < 10; i++) tone(250 + i % 4 * 95, 0.05, "square", 0.011, i * 140);
     await wait(1450, token);
     state.round = activate(state.round, die);
-    state.hudAt = Date.now();
+    state.hudAt = motionClock();
     burst("bonus");
     soundFor("bonus");
     ui();
@@ -290,7 +303,7 @@ async function activateScam(token) {
     ui();
     await wait(1050, token);
   }
-  state.overlay = null;
+  await dismissOverlay(token);
   ui();
 }
 async function runStep() {
@@ -300,6 +313,7 @@ async function runStep() {
   state.error = null;
   state.overlay = null;
   state.effect = null;
+  if (state.selection) state.selection = { ...state.selection, exitAt: motionClock() };
   state.selected = null;
   state.status = "Here we go\u2026";
   ui();
@@ -314,49 +328,55 @@ async function runStep() {
     const landing = resolveLanding(layout, rest, { magnetism: false, seamBandDeg: 0 });
     if (landing.kind !== "winner" || landing.slice !== index) throw new Error("Landing does not match the slice");
     const target = nextRotation(state.rotation, landing.restAngle, spinTurns(0.3));
-    state.motion = { from: state.rotation, to: target, at: Date.now(), duration: ms(5600) };
+    state.motion = { from: state.rotation, to: target, at: motionClock(), duration: ms(5600) };
     state.status = r.phase === "normal" ? "Opening spin " + (r.normal + 1) + "\u2026" : r.mode === "dice" ? "Watch the next cash boost\u2026" : r.mode === "rent" ? "Where are we building?" : r.mode === "gumball" ? "Which sweet joins the collection?" : isExtra(r.mode) ? MODES[r.mode].short : "Cash, multiplier\u2026 or EXIT?";
     ui();
     await wait(ms(5600), token);
     state.rotation = target;
     state.motion = null;
     state.selected = index;
+    state.selection = { index, at: motionClock() };
     const actual = sliceAtAngle(layout, ((90 - target) % 360 + 360) % 360);
     canvas.dataset.landed = String(index);
     canvas.dataset.pointer = String(actual);
     canvas.dataset.rotation = String(target);
     if (actual !== index) throw new Error("Pointer did not reach the result");
     state.round = land(r, index, random);
+    state.settledAt = motionClock();
     const e = state.round.last;
-    state.hudAt = Date.now();
+    state.hudAt = motionClock();
     if (e.kind === "arcade") {
       state.items = board(state.round);
-      state.overlay = { kind: "arcade", entry: e, at: Date.now() };
+      state.overlay = { kind: "arcade", entry: e, at: motionClock() };
       state.status = e.headline + " " + e.detail;
+      ui();
+      const timing = sceneTiming(r.mode, e);
+      await wait(timing.reveal, token);
       soundFor(e.amount > r.prices.cash * 3 ? "bonus" : "cash");
       burst(e.amount > r.prices.cash * 3 ? "bonus" : "cash");
-      ui();
-      await wait(2900, token);
+      await wait(timing.duration - timing.reveal, token);
     } else if (e.kind === "rent") {
       state.items = board(state.round);
       soundFor("bonus");
       burst("bonus");
-      state.overlay = { kind: "property", entry: e, at: Date.now() };
+      state.overlay = { kind: "property", entry: e, at: motionClock() };
       state.status = e.name + " " + (e.level === 1 ? "built" : "upgraded") + ". Now collecting the whole street.";
       ui();
       await wait(1400, token);
-      state.overlay = { kind: "rent", entry: e, at: Date.now() };
+      await dismissOverlay(token);
+      state.overlay = { kind: "rent", entry: e, at: motionClock() };
       soundFor("cash");
       ui();
       await wait(2700, token);
     } else if (e.kind === "candy") {
-      state.overlay = { kind: "candy", entry: e, at: Date.now() };
+      state.overlay = { kind: "candy", entry: e, at: motionClock() };
       soundFor("cash");
       state.status = SWEETS[e.color].name + " candy: +" + money(e.base) + ".";
       ui();
       await wait(1600, token);
       if (e.matched) {
-        state.overlay = { kind: "match", entry: e, at: Date.now() };
+        await dismissOverlay(token);
+        state.overlay = { kind: "match", entry: e, at: motionClock() };
         burst("final");
         soundFor("final");
         state.status = "Three " + SWEETS[e.color].name.toLowerCase() + " candies! Set bonus +" + money(e.setBonus) + ".";
@@ -373,11 +393,12 @@ async function runStep() {
     } else if (e.kind === "exit") {
       soundFor("exit");
       burst("exit");
-      state.overlay = { kind: "exit", at: Date.now() };
+      state.overlay = { kind: "exit", at: motionClock() };
       state.status = "EXIT! Time to settle the bill.";
       ui();
       await wait(1700, token);
-      state.overlay = { kind: "math", before: e.before, after: e.after, mult: r.mult, at: Date.now() };
+      await dismissOverlay(token);
+      state.overlay = { kind: "math", before: e.before, after: e.after, mult: r.mult, at: motionClock() };
       soundFor("boost");
       burst("final");
       ui();
@@ -391,8 +412,9 @@ async function runStep() {
       ui();
       await wait(e.mult > 1 ? 1800 : 1350, token);
     }
+    await dismissOverlay(token);
     if (state.round.phase === "complete") {
-      state.overlay = { kind: "final", detail: state.round.reason === "limit" ? "Round limit reached - charges settled" : isExtra(state.round.mode) ? state.round.step + " spins - every charge shown in round history" : state.round.mode === "rent" ? state.round.step + " spins - rent charged after every build" : state.round.mode === "gumball" ? state.round.step + " candies + " + state.round.sets + " set bonuses" : state.round.mode === "dice" ? state.round.ledger.length + " landings \xB7 every cash hit counted" : money(e.before) + " \xD7 " + r.mult + " = " + money(state.round.total), at: Date.now() };
+      state.overlay = { kind: "final", detail: state.round.reason === "limit" ? "Round limit reached - charges settled" : isExtra(state.round.mode) ? state.round.step + " spins - every charge shown in round history" : state.round.mode === "rent" ? state.round.step + " spins - rent charged after every build" : state.round.mode === "gumball" ? state.round.step + " candies + " + state.round.sets + " set bonuses" : state.round.mode === "dice" ? state.round.ledger.length + " landings \xB7 every cash hit counted" : money(e.before) + " \xD7 " + r.mult + " = " + money(state.round.total), at: motionClock() };
       burst("final");
       soundFor("final");
     } else state.overlay = null;
@@ -550,27 +572,38 @@ window.addEventListener("keydown", (e) => {
     runStep();
   }
 });
-let frames = 0, frameStart = Date.now();
+let frameStart = motionClock(), previousFrame = null, samples = [], drawSamples = [], reviewFrames = [];
+const percentile = (values, p) => values.length ? [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(values.length*p))] : 0;
 function frame() {
-  const t = Date.now();
-  frames++;
-  if (t - frameStart >= 1e3) {
-    canvas.dataset.fps = String(Math.round(frames * 1e3 / (t - frameStart)));
-    frames = 0;
-    frameStart = t;
+  const start = performance.now(), t = motionClock();
+  if (!document.hidden && previousFrame !== null) {
+    const delta = start - previousFrame;
+    samples.push(delta);
+    if (state.busy) reviewFrames.push(delta);
   }
+  previousFrame = document.hidden ? null : start;
   if (state.motion) {
     const angle = rotationAt(state, t), sector = Math.floor(((90 - angle) % 360 + 360) % 360 / (360 / state.items.length));
     if (sector !== lastSector) {
       lastSector = sector;
       state.tickAt = t;
-      if (!reduced && t - lastTick > 50) {
+      if (!reduced && t - lastTick > 65) {
         tone(650 + sector % 4 * 40, 0.025, "triangle", 0.013);
         lastTick = t;
       }
     }
   }
   renderer.draw(state, t);
+  if (!document.hidden) drawSamples.push(performance.now() - start);
+  if (t - frameStart >= 1000) {
+    canvas.dataset.fps = String(Math.round(samples.length * 1000 / Math.max(1, samples.reduce((a,b)=>a+b,0))));
+    canvas.dataset.frameP95 = percentile(samples,0.95).toFixed(2);
+    canvas.dataset.drawP95 = percentile(drawSamples,0.95).toFixed(2);
+    canvas.dataset.roundFrameP95 = percentile(reviewFrames,0.95).toFixed(2);
+    canvas.dataset.roundFrames = String(reviewFrames.length);
+    canvas.dataset.longFrames = String(reviewFrames.filter(n=>n>50).length);
+    samples=[];drawSamples=[];frameStart=t;
+  }
   requestAnimationFrame(frame);
 }
 document.fonts.ready.then(() => {

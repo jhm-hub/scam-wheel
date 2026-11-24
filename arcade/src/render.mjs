@@ -1,3 +1,4 @@
+import { wheelRotation, smooth, progress, sceneTiming, overlayOpacity } from "./motion.mjs";
 import { EXTRA_MODES, isExtra, extraStatus } from "./extended.mjs";
 import { THEME } from "./config.mjs";
 import { pixelSprite } from "./pixel-art.mjs";
@@ -16,13 +17,7 @@ function bezier(t, x1, y1, x2, y2) {
   }
   return p(s, y1, y2);
 }
-function rotationAt(s, t) {
-  if (!s.motion) return s.rotation;
-  const m = s.motion, x = clamp((t - m.at) / m.duration);
-  if (s.reduced) return m.to;
-  if (x < 0.09) return mix(m.from, m.from - 8, bezier(x / 0.09, 0.35, 0, 0.7, 0.45));
-  return mix(m.from - 8, m.to, bezier((x - 0.09) / 0.91, 0.3, 0.09, 0.18, 1));
-}
+const rotationAt = wheelRotation;
 const sprites = {
   heart: ["..pp.pp..", ".ppppppp.", "ppppppppp", "ppppppppp", ".ppppppp.", "..ppppp..", "...ppp...", "....p...."],
   crown: ["g...g...g", "gg.ggg.gg", "ggggggggg", ".ggggggg.", ".ggpgpgg.", ".ggggggg.", ".fffffff."],
@@ -35,7 +30,9 @@ function makeRenderer(canvas) {
   const dpi = Math.min(1.5, window.devicePixelRatio || 1);
   canvas.width = 1e3 * dpi;
   canvas.height = 920 * dpi;
-  let ctx = canvas.getContext("2d"), cache = null, cacheKey = "", reduceMotion = false;
+  let ctx = canvas.getContext("2d"), cache = null, reduceMotion = false;
+  const wheels = new Map(), itemKeys = new WeakMap();
+  let pointerTicks = [];
   const P = { pink: "#e58abd", lilac: "#bca3e6", cream: "#fff2dc", ink: "#512545", gold: "#ffd98c", dark: "#422044" };
   function tint(hex, amount) {
     const n = parseInt(hex.slice(1), 16);
@@ -174,9 +171,10 @@ function makeRenderer(canvas) {
     ctx.restore();
   }
   function wheelCache(s, roulette) {
-    const items = s.items, key = JSON.stringify([s.scene, roulette, items, s.theme]);
-    if (key === cacheKey && cache) return cache;
-    cacheKey = key;
+    const items = s.items;
+    if (!itemKeys.has(items)) itemKeys.set(items, JSON.stringify(items));
+    const key = s.scene + roulette + itemKeys.get(items) + JSON.stringify(s.theme);
+    if (wheels.has(key)) return wheels.get(key);
     cache = document.createElement("canvas");
     cache.width = 1080;
     cache.height = 1080;
@@ -262,10 +260,9 @@ function makeRenderer(canvas) {
         ctx.save();
         ctx.translate(Math.cos(m) * 221, Math.sin(m) * 221);
         ctx.rotate(m + Math.PI / 2);
-        text(item.name, 0, -68, 17, P.cream, 1e3, true);
-        house(0, -15, 76, item.level, i);
-        text(item.level ? "RENT $" + item.rent : "+$" + item.value + " RENT", 0, 47, fit(item.level ? "RENT $" + item.rent : "+$" + item.value + " RENT", 21, 153), P.cream, 1e3, true);
-        if (item.level) text("LV " + item.level, 0, 71, 13, P.gold, 1e3, true);
+        text(item.name, 0, -48, 17, P.cream, 1e3, true);
+        house(0, 16, 48, item.level, i);
+        text(item.level ? "RENT $" + item.rent : "+$" + item.value + " RENT", 0, 61, fit(item.level ? "RENT $" + item.rent : "+$" + item.value + " RENT", 21, 153), P.cream, 1e3, true);
         ctx.restore();
       }
     } else if (s.scene === "gumball") {
@@ -320,6 +317,8 @@ function makeRenderer(canvas) {
       circle(0, 0, R - 7, null, "#f5bcdf55", 3);
     }
     ctx = main;
+    wheels.set(key, cache);
+    if (wheels.size > 5) wheels.delete(wheels.keys().next().value);
     return cache;
   }
   function glowStroke(color, width = 3, blur = 18) {
@@ -347,9 +346,12 @@ function makeRenderer(canvas) {
     ctx.save();
     ctx.rotate(angle * Math.PI / 180);
     ctx.drawImage(image, -360, -360, 720, 720);
-    if (s.selected !== null && !s.motion) {
+    const selection = s.selection || (s.selected !== null ? {index:s.selected,at:t-250} : null);
+    const highlight = selection ? overlayOpacity(selection,t,s.reduced) : 0;
+    if (highlight > 0 && (!s.motion || selection.exitAt !== undefined)) {
+      ctx.save();ctx.globalAlpha *= highlight;
       circle(0, 0, R, "#26132a66");
-      const n = s.items.length, i = s.selected, a = i * TAU / n - Math.PI, b = a + TAU / n;
+      const n = s.items.length, i = selection.index, a = i * TAU / n - Math.PI, b = a + TAU / n;
       ctx.save();
       ctx.beginPath();
       if (roulette) {
@@ -373,14 +375,15 @@ function makeRenderer(canvas) {
         ctx.closePath();
       }
       glowStroke("#ffedb9", 5, s.reduced ? 0 : 18);
+      ctx.restore();
     }
     ctx.restore();
     const count = roulette ? 30 : 48;
     for (let i = 0; i < count; i++) {
-      const a = i * TAU / count, light = s.reduced ? i % 3 === 0 : (Math.floor(t / 120) + i) % 7 < 3;
-      ctx.shadowBlur = light ? 9 : 0;
+      const a = i * TAU / count, light = s.reduced ? 0.65 : 0.5 + 0.5 * Math.sin(a * 3 - t / 650);
+      ctx.shadowBlur = 2 + light * 6;
       ctx.shadowColor = "#ffeab5";
-      circle(Math.cos(a) * 329, Math.sin(a) * 329, roulette ? 3.5 : 3.1, light ? P.cream : P.pink);
+      circle(Math.cos(a) * 329, Math.sin(a) * 329, roulette ? 3.5 : 3.1, tint(P.pink, 0.2 + light * 0.8));
     }
     ctx.shadowBlur = 0;
     if (s.scene === "gumball") {
@@ -405,8 +408,10 @@ function makeRenderer(canvas) {
     ctx.restore();
     ctx.save();
     ctx.translate(CX, CY - 337);
-    const kick = s.reduced ? 0 : Math.max(0, 1 - (t - (s.tickAt || 0)) / 140);
-    ctx.rotate(kick * -0.23);
+    if (s.tickAt && pointerTicks.at(-1) !== s.tickAt) pointerTicks.push(s.tickAt);
+    pointerTicks = pointerTicks.filter(at => t-at >= 0 && t-at < 500).slice(-16);
+    const kick = s.reduced ? 0 : pointerTicks.reduce((sum,at) => {const age=t-at;return sum + Math.sin(age/50)*Math.exp(-age/100);},0);
+    ctx.rotate(Math.max(-0.25,Math.min(0.12,-kick*0.11)));
     ctx.shadowColor = "#e9b1da99";
     ctx.shadowBlur = 17;
     ctx.beginPath();
@@ -473,7 +478,7 @@ function makeRenderer(canvas) {
       const a = i * 2.39996 + (e.seed || 0), v = 80 + i * 37 % 230, delay = i % 6 * 0.025, p = clamp((age - delay) / (1 - delay)), fade = 1 - p;
       const x = 500 + Math.cos(a) * v * p * (e.kind === "final" ? 2 : 1.3), y = (e.kind === "final" ? 380 : 360) + Math.sin(a) * v * p + 300 * p * p;
       ctx.save();
-      ctx.globalAlpha = fade;
+      ctx.globalAlpha = fade * smooth(p / 0.05);
       if (i % 5 === 0) icon(e.kind === "exit" ? "star" : "coin", x, y, 18 + i % 3 * 5, a + p * 3);
       else {
         ctx.translate(x, y);
@@ -497,10 +502,9 @@ function makeRenderer(canvas) {
     ctx.shadowOffsetY = 0;
     panel(-240, -80, 480, 165, "#3f254b", "#d394be77", 12);
     text(title, 0, -51, 15, "#e4bfdc", 900);
-    let size = 58;
-    while (main.length * size * 0.56 > 450) size -= 2;
+    const size = fit(main, 58, 450);
     text(main, 0, 1, size, accent, 1e3);
-    text(sub, 0, 57, 17, P.cream, 800);
+    text(sub, 0, 57, fit(sub, 18, 454), P.cream, 800);
     ctx.restore();
   }
   function hud(s, t) {
@@ -509,10 +513,13 @@ function makeRenderer(canvas) {
     if (isExtra(r.mode)) {
       const [label, value] = extraStatus(r);
       panel(234, 797, 532, 78, "#3c254aee", EXTRA_MODES[r.mode].colors[2], 12);
-      text(r.phase === "complete" ? "ROUND COMPLETE" : r.spins === null ? "KEEP SPINNING" : r.spins + " SPIN" + (r.spins === 1 ? "" : "S") + " LEFT", 361, 821, 15, P.cream);
+      text(r.phase === "complete" ? s.overlay && s.overlay.kind !== "final" ? "FINAL REVEAL" : "ROUND COMPLETE" : r.spins === null ? "KEEP SPINNING" : r.spins + " SPIN" + (r.spins === 1 ? "" : "S") + " LEFT", 361, 821, 15, P.cream);
       text(EXTRA_MODES[r.mode].name, 361, 849, 17, P.gold);
       text(label, 637, 819, 13, P.cream);
+      ctx.save();
+      if (s.overlay?.kind === "arcade") { const reveal=sceneTiming(r.mode,s.overlay.entry).reveal;ctx.globalAlpha*=progress(t-s.overlay.at,reveal-160,reveal+80,s.reduced); }
       text(value, 637, 848, fit(value, 29, 230), P.gold);
+      ctx.restore();
       return;
     }
     if (r.mode === "rent") {
@@ -526,14 +533,20 @@ function makeRenderer(canvas) {
       return;
     }
     if (r.mode === "gumball") {
-      const preview = ["candy", "match"].includes(s.overlay?.kind) ? r.last.candies : r.candies;
+      const dropping = s.overlay?.kind === "candy", matching = s.overlay?.kind === "match", age = s.overlay ? t-s.overlay.at : 0;
+      const preview = dropping || matching ? [...r.last.candies] : r.candies;
+      if (dropping && age < 1200 && !s.reduced) preview[r.last.color]--;
       for (let i = 0; i < 3; i++) {
         const x = 310 + i * 190;
         panel(x - 88, 777, 176, 90, "#3c254aee", SWEETS[i].color, 9);
         text(SWEETS[i].name + " TRIO", x, 794, 12, SWEETS[i].color);
         for (let j = 0; j < 3; j++) {
           const bx = x - 38 + j * 38;
-          if (j < preview[i]) candy(bx, 824, 13, i);
+          if (j < preview[i]) {
+            const fade=matching&&i===r.last.color?1-progress(age,1650,2100,s.reduced):1;
+            if (matching && i===r.last.color) circle(bx,824,13,"#24172f","#86658e",2);
+            ctx.save();ctx.globalAlpha*=fade;candy(bx,824,13,i);ctx.restore();
+          }
           else circle(bx, 824, 13, "#24172f", "#86658e", 2);
         }
         text("SET +$" + r.prices.cash * SWEETS[i].factor, x, 851, 13, P.gold);
@@ -574,14 +587,20 @@ function makeRenderer(canvas) {
     if (o.kind === "die") {
       dimWheel(0.66);
       text("DICE BOOST", 500, 260, 34, P.cream, 1e3, true);
-      const age = t - o.at, rolling = age < o.rollTime, value = rolling ? 1 + Math.floor(age / 90) % 6 : o.value;
-      const a = s.reduced ? 0 : rolling ? Math.sin(age / 100) * 0.25 : Math.sin(Math.min((age - o.rollTime) / 350, 1) * Math.PI) * 0.05;
-      dice(500, 421, 160, value, a);
+      const age = t - o.at, rolling = age < o.rollTime;
+      const settle = 1 - progress(age,o.rollTime-450,o.rollTime,s.reduced);
+      const value = !s.reduced && age < o.rollTime-220 ? 1 + Math.floor(12*(1-(1-clamp(age/o.rollTime))**2))%6 : o.value;
+      const a = s.reduced ? 0 : Math.sin(age/100)*0.22*settle;
+      dice(500, 421 - (s.reduced ? 0 : Math.abs(Math.sin(age/130))*12*settle), 160, value, a);
       text(rolling ? "ROLLING\u2026" : "+" + o.value + " EXTRA SPINS", 500, 566, rolling ? 23 : 33, P.gold, 1e3, true);
       if (!rolling) text(o.start + " starting + " + o.value + " bonus = " + (o.start + o.value) + " spins", 500, 612, 19, P.cream, 800);
     }
     if (o.kind === "arcade") {
       const e = o.entry, def = EXTRA_MODES[s.round.mode];
+      const show = progress(t - o.at, sceneTiming(s.round.mode,e).reveal - 180, sceneTiming(s.round.mode,e).reveal + 120, s.reduced);
+      ctx.save();
+      ctx.globalAlpha *= show;
+      ctx.translate(0, (1 - show) * 18);
       panel(212, 646, 576, 139, "#32203fee", def.colors[2], 13);
       text(e.headline, 500, 670, fit(e.headline, 26, 544), P.cream);
       text(e.amount ? "+$" + e.amount.toLocaleString("en-US") : "NO ADDED CHARGE", 500, 706, e.amount ? 42 : 24, P.gold);
@@ -594,6 +613,7 @@ function makeRenderer(canvas) {
         else rows[i] += (rows[i] ? " " : "") + word;
       }
       rows.slice(0, 2).forEach((row, i) => text(row, 500, 740 + i * 21, 15, P.cream, 800));
+      ctx.restore();
     }
     if (o.kind === "property") {
       const e = o.entry, age = clamp((t - o.at) / 900);
@@ -623,7 +643,7 @@ function makeRenderer(canvas) {
       const e = o.entry, p = s.reduced ? 1 : ease(clamp((t - o.at) / 1200)), targetX = 310 + e.color * 190 - 38 + (e.candies[e.color] - 1) * 38;
       const x = mix(500, targetX, p) + Math.sin(p * Math.PI) * 110, y = mix(230, 824, p) - Math.sin(p * Math.PI) * 70;
       candy(x, y, 32 - 19 * p, e.color, s.reduced ? 0 : p * TAU);
-      if (p > 0.8) popPanel("CANDY DISPENSED", "+$" + e.base, SWEETS[e.color].name + " collection: " + e.candies[e.color] + " / 3", t, o.at, SWEETS[e.color].color);
+      if (p > 0.8) popPanel("CANDY DISPENSED", "+$" + e.base, SWEETS[e.color].name + " collection: " + e.candies[e.color] + " / 3", t, o.at + 760, SWEETS[e.color].color);
     }
     if (o.kind === "match") {
       dimWheel(0.55);
@@ -666,14 +686,14 @@ function makeRenderer(canvas) {
       panel(-290, -171, 580, 342, "#8a4f82", "#ffe2be", 17);
       panel(-279, -160, 558, 320, "#37223f", "#e9b5d8", 12);
       for (let i = 0; i < 16; i++) {
-        const lit = s.reduced ? true : (Math.floor(t / 180) + i) % 3 !== 0;
-        ctx.fillStyle = lit ? "#ffdda0" : "#b979a8";
+        const lit = s.reduced ? 1 : 0.5 + 0.5 * Math.sin(t / 420 + i * 0.7);
+        ctx.fillStyle = tint("#b979a8", lit * 0.65);
         ctx.fillRect(-261 + i * 34, -166, 19, 7);
         ctx.fillRect(-261 + i * 34, 159, 19, 7);
       }
       icon("crown", 0, -151, 68);
       text("YOU\u2019VE BEEN SCAMMED", 0, -97, 24, "#f6cee8");
-      const amount = "$" + s.round.total.toLocaleString("en-US"), size = Math.min(97, 450 / (amount.length * 0.6));
+      const amount = "$" + s.round.total.toLocaleString("en-US"), size = fit(amount, 97, 490);
       text(amount, 0, -14, size, P.gold);
       text({ dice: "Those extra spins added up.", roulette: "The exit comes with a bill.", rent: "Free to visit. Expensive to stay.", gumball: "A sweet tooth. A very sour bill." }[s.round.mode] || "Cute game. Quite a bill.", 0, 64, 21, P.cream, 800);
       text(o.detail, 0, 108, 16, "#d4b7e1", 800);
@@ -708,11 +728,25 @@ function makeRenderer(canvas) {
       ctx.stroke();
       ctx.restore();
     }
-    disc(s, t, roulette, 1, s.reduced ? 1 : 0.97 + 0.03 * trans);
+    if (s.previousScene && trans < 1 && !s.reduced) {
+      Object.assign(P, s.previousScene.theme || THEME);
+      disc(s.previousScene, t, false, 1 - trans, 1 - trans * 0.04);
+      Object.assign(P, THEME);
+    }
+    ctx.save();
+    ctx.globalAlpha *= s.reduced ? 1 : trans;
+    ctx.translate(CX,CY);
+    const sceneScale = s.reduced ? 1 : 0.94 + 0.06 * trans;
+    ctx.scale(sceneScale,sceneScale);ctx.translate(-CX,-CY);
+    disc(s, t, roulette);
     if (isExtra(s.scene)) drawScene(ctx, s, t);
+    ctx.restore();
     hud(s, t);
-    overlay(s, t);
     particles(s, t);
+    ctx.save();
+    ctx.globalAlpha *= overlayOpacity(s.overlay,t,s.reduced);
+    overlay(s,t);
+    ctx.restore();
     if (s.round.scripted) {
       panel(374, 18, 252, 38, "#3c254aee", P.gold, 8);
       text("SCRIPTED SHOWCASE", 500, 37, 16, P.gold);

@@ -388,3 +388,25 @@ test("Mystery discovery visits every scam before repeating and avoids a repeat a
   }
   assert.throws(() => makeDiscoveryDeck([]));
 });
+
+test('Spin motion joins its wind-up smoothly and settles exactly without overshoot', async()=>{
+  const {wheelRotation}=await import('../src/motion.mjs');
+  const s={rotation:725,motion:{from:725,to:2865,at:1000,duration:5600},reduced:false};
+  assert.equal(wheelRotation(s,0),725);
+  assert.equal(wheelRotation(s,6600),2865);
+  assert.equal(wheelRotation(s,9000),2865);
+  const join=1000+5600*0.085;
+  const left=(wheelRotation(s,join)-wheelRotation(s,join-0.1))/0.1;
+  const right=(wheelRotation(s,join+0.1)-wheelRotation(s,join))/0.1;
+  assert.ok(Math.abs(left-right)<0.001,'wind-up has no velocity jump');
+  let last=wheelRotation(s,join);
+  for(let t=join+1;t<=6600;t+=1){const x=wheelRotation(s,t);assert.ok(x>=last-1e-8&&x<=2865+1e-8);last=x;}
+  assert.ok(2865-wheelRotation(s,6599)<0.00001,'landing has no final snap');
+  assert.equal(wheelRotation({...s,reduced:true},1050),2865);
+});
+test('Every scene gets action time followed by a readable bill and a bounded fade',async()=>{
+  const {sceneTiming,overlayOpacity}=await import('../src/motion.mjs');
+  for(const mode of Object.keys(EXTRA_MODES)){const timing=sceneTiming(mode,{lines:[1,2,3]});assert.ok(timing.reveal>=1100);assert.ok(timing.duration-timing.reveal>=1550);}
+  const overlay={at:1000,exitAt:3000};
+  assert.equal(overlayOpacity(overlay,1000),0);assert.equal(overlayOpacity(overlay,1220),1);assert.equal(overlayOpacity(overlay,3240),0);
+});

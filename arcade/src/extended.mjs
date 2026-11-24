@@ -123,7 +123,7 @@ function landExtra(s, item2, index, rng = Math.random) {
     }
     case "bubble": {
       d.air += item2.value;
-      add(item2.value + " units of air", item2.value * c);
+      add(item2.value + (item2.value === 1 ? " unit of air" : " units of air"), item2.value * c);
       entry.headline = "+" + item2.value + " AIR";
       while (d.air >= d.capacity) {
         d.air -= d.capacity;
@@ -147,19 +147,19 @@ function landExtra(s, item2, index, rng = Math.random) {
       entry.moved = moved;
       entry.seat = seat;
       add("New guest", c);
-      if (moved.length) add(moved.length + " displaced guests", moved.length * b);
+      if (moved.length) add(moved.length + (moved.length === 1 ? " displaced guest" : " displaced guests"), moved.length * b);
       entry.headline = moved.length ? "MAKE ROOM. PAY THE MOVING FEES." : "GUEST SEATED";
       entry.detail = moved.length === 6 ? "Full house: " + d.standing + " standing-room guest" + (d.standing === 1 ? "" : "s") + "." : "Seat " + (index + 1) + " booked. " + moved.length + " guests moved.";
       break;
     }
     case "blocks": {
       d.heights[item2.column] += item2.value;
-      add(item2.value + " blocks", item2.value * c);
+      add(item2.value + (item2.value === 1 ? " block" : " blocks"), item2.value * c);
       const rows = Math.min(...d.heights);
       if (rows) {
         d.heights = d.heights.map((v) => v - rows);
         d.lines += rows;
-        add(rows + " cleared rows", rows * c * 5);
+        add(rows + (rows === 1 ? " cleared row" : " cleared rows"), rows * c * 5);
       }
       entry.cleared = rows;
       if (Math.max(...d.heights) >= 10) {
@@ -258,7 +258,7 @@ function landExtra(s, item2, index, rng = Math.random) {
       const fallen = hits.filter((i) => d.pins[i]);
       fallen.forEach((i) => d.pins[i] = false);
       entry.fallen = fallen;
-      add(fallen.length + " pins", fallen.length * c);
+      add(fallen.length + (fallen.length === 1 ? " pin" : " pins"), fallen.length * c);
       if (d.pins.every((v) => !v)) {
         d.racks++;
         add("Rack-clear fee", c * 5);
@@ -275,7 +275,7 @@ function landExtra(s, item2, index, rng = Math.random) {
       if (item2.dir > 0) d.x += cut;
       d.width = remaining;
       d.floors.push({ x: d.x, width: remaining, cut, dir: item2.dir });
-      add("Floor: " + remaining + " blocks", remaining * c);
+      add("Floor: " + remaining + (remaining === 1 ? " block" : " blocks"), remaining * c);
       if (cut) add("Overhang cleanup: " + cut, cut * b);
       if (remaining === 0) complete = true;
       entry.headline = remaining === 0 ? "TOWER DOWN. CLEANUP IS EXTRA." : cut ? "OVERHANG BILLED" : "PERFECT FIT";

@@ -44,6 +44,24 @@
 #ledger small{display:block;font-size:11px;font-weight:600;line-height:1.4;color:#bca6c7;margin-top:4px}
 @media(max-width:680px){.stage{position:sticky;top:0;z-index:2;background:#21142f;border-radius:0}.viewer .stage{background:none;position:relative;z-index:auto}}
 
+/* A taller wheel keeps the scene readable in a narrow browser pane. */
+@media(max-width:680px){
+ .stage canvas{width:100%;height:auto;max-height:62vh;object-fit:contain}
+ .stage{background:linear-gradient(#21142f,#1a1028);border-bottom:1px solid #c999c022}
+ .selection .library{display:block}.library .modes{max-height:190px}
+ .viewer .stage{background:none;border:0}.viewer .stage canvas{max-height:none}
+}
+button{transition:filter 160ms ease,background-color 160ms ease,box-shadow 160ms ease,transform 120ms ease}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #ffe2ae;outline-offset:4px}
+button:not(:disabled):active{transform:translateY(1px)}
+
+@media(max-width:680px){
+ .stage{overflow:hidden}
+ .stage canvas{width:min(132%,67.39vh);height:auto;max-width:none;max-height:none;position:relative;left:50%;transform:translateX(-50%);margin:0}
+ .viewer .stage{overflow:visible}
+ .viewer .stage canvas{width:100%;left:auto;transform:none;position:static}
+}
+
 /* Nunito OFL
 Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
 
@@ -161,6 +179,41 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 <footer>Built on Landaire&#8217;s wheel logic &#183; Faith&#8217;s demo collection</footer>
 </aside></main><script>"use strict";
 (() => {
+  // arcade/src/motion.mjs
+  var clamp01 = (n) => Math.max(0, Math.min(1, n));
+  var mix = (a, b, p) => a + (b - a) * p;
+  var smooth = (p) => {
+    const x = clamp01(p);
+    return x * x * x * (10 + x * (-15 + 6 * x));
+  };
+  var progress = (age, start, end, reduced2 = false) => reduced2 ? 1 : smooth((age - start) / (end - start));
+  var arc = (p, height) => Math.sin(Math.PI * clamp01(p)) * height;
+  function spinProgress(p) {
+    const x = clamp01(p);
+    return x * x * (10 + x * (-20 + x * (15 - 4 * x)));
+  }
+  function wheelRotation(s, now) {
+    if (!s.motion) return s.rotation;
+    const m = s.motion, x = clamp01((now - m.at) / m.duration);
+    if (s.reduced) return m.to;
+    const pull = 0.085;
+    if (x < pull) return mix(m.from, m.from - 7, smooth(x / pull));
+    return mix(m.from - 7, m.to, spinProgress((x - pull) / (1 - pull)));
+  }
+  function sceneTiming(mode, entry) {
+    const reveal = { baggage: 1200, auction: 1500, race: 1700, stamps: 1300, bubble: 1900, seats: 1800, blocks: 2e3, charms: 1250, toll: 1750, credit: 1250, map: 1450, plinko: 2100, encore: 1450, bowling: 2150, tower: 1900, boss: 1100 }[mode] ?? 1600;
+    return { reveal, duration: reveal + (entry?.lines?.length > 2 ? 1900 : 1550) };
+  }
+  function overlayOpacity(o, now, reduced2 = false) {
+    if (!o) return 0;
+    if (reduced2) return o.exitAt === void 0 ? 1 : 0;
+    const enter = reduced2 ? 1 : smooth((now - o.at) / 220);
+    return enter * (o.exitAt === void 0 ? 1 : 1 - smooth((now - o.exitAt) / 240));
+  }
+  function motionClock() {
+    return performance.timeOrigin + performance.now();
+  }
+
   // arcade/src/extended.mjs
   var def = (name, tag, rule, art, colors, showcase) => ({ name, tag, rule, short: rule, art, colors, showcase });
   var EXTRA_MODES = {
@@ -288,7 +341,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
       case "bubble": {
         d.air += item2.value;
-        add(item2.value + " units of air", item2.value * c);
+        add(item2.value + (item2.value === 1 ? " unit of air" : " units of air"), item2.value * c);
         entry.headline = "+" + item2.value + " AIR";
         while (d.air >= d.capacity) {
           d.air -= d.capacity;
@@ -312,19 +365,19 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         entry.moved = moved;
         entry.seat = seat;
         add("New guest", c);
-        if (moved.length) add(moved.length + " displaced guests", moved.length * b);
+        if (moved.length) add(moved.length + (moved.length === 1 ? " displaced guest" : " displaced guests"), moved.length * b);
         entry.headline = moved.length ? "MAKE ROOM. PAY THE MOVING FEES." : "GUEST SEATED";
         entry.detail = moved.length === 6 ? "Full house: " + d.standing + " standing-room guest" + (d.standing === 1 ? "" : "s") + "." : "Seat " + (index + 1) + " booked. " + moved.length + " guests moved.";
         break;
       }
       case "blocks": {
         d.heights[item2.column] += item2.value;
-        add(item2.value + " blocks", item2.value * c);
+        add(item2.value + (item2.value === 1 ? " block" : " blocks"), item2.value * c);
         const rows = Math.min(...d.heights);
         if (rows) {
           d.heights = d.heights.map((v) => v - rows);
           d.lines += rows;
-          add(rows + " cleared rows", rows * c * 5);
+          add(rows + (rows === 1 ? " cleared row" : " cleared rows"), rows * c * 5);
         }
         entry.cleared = rows;
         if (Math.max(...d.heights) >= 10) {
@@ -423,7 +476,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         const fallen = hits.filter((i) => d.pins[i]);
         fallen.forEach((i) => d.pins[i] = false);
         entry.fallen = fallen;
-        add(fallen.length + " pins", fallen.length * c);
+        add(fallen.length + (fallen.length === 1 ? " pin" : " pins"), fallen.length * c);
         if (d.pins.every((v) => !v)) {
           d.racks++;
           add("Rack-clear fee", c * 5);
@@ -440,7 +493,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (item2.dir > 0) d.x += cut;
         d.width = remaining;
         d.floors.push({ x: d.x, width: remaining, cut, dir: item2.dir });
-        add("Floor: " + remaining + " blocks", remaining * c);
+        add("Floor: " + remaining + (remaining === 1 ? " block" : " blocks"), remaining * c);
         if (cut) add("Overhang cleanup: " + cut, cut * b);
         if (remaining === 0) complete = true;
         entry.headline = remaining === 0 ? "TOWER DOWN. CLEANUP IS EXTRA." : cut ? "OVERHANG BILLED" : "PERFECT FIT";
@@ -969,7 +1022,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   var TAU = Math.PI * 2;
   var clamp = (n) => Math.max(0, Math.min(1, n));
   var lerp = (a, b, t) => a + (b - a) * t;
-  var ease = (t) => 1 - (1 - t) ** 3;
   var cream = "#fff0dd";
   var gold = "#ffe0a0";
   var pink = "#eea0bc";
@@ -978,11 +1030,21 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   function drawScene(ctx, s, t) {
     const mode = s.round.mode, def2 = EXTRA_MODES[mode], d = s.round.data;
     if (!def2 || !d) return;
-    const e = s.overlay?.kind === "arcade" ? s.overlay.entry : null, age = e ? t - s.overlay.at : 3e3, p = s.reduced ? 1 : ease(clamp(age / 1850)), before = e?.fx.before ?? d;
-    const text = (str, x, y, size = 20, color = cream) => {
+    const e = s.overlay?.kind === "arcade" ? s.overlay.entry : null, age = e ? t - s.overlay.at : 1e4, p = progress(age, 160, sceneTiming(mode, e).reveal - 100, s.reduced), before = e?.fx.before ?? d;
+    const phase = (start, end) => progress(age, start, end, s.reduced);
+    const text = (str, x, y, size = 20, color = cream, maxWidth = Infinity) => {
+      const width = Math.min(maxWidth, Math.max(48, 2 * (Math.sqrt(Math.max(0, 180 * 180 - y * y)) - Math.abs(x)) - 10));
       ctx.font = "1000 " + size + "px Nunito";
+      while (ctx.measureText(String(str)).width > width && size > 12) {
+        size--;
+        ctx.font = "1000 " + size + "px Nunito";
+      }
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(1.2, size * 0.075);
+      ctx.strokeStyle = "#38243f";
+      ctx.strokeText(String(str), x, y);
       ctx.fillStyle = color;
       ctx.fillText(String(str), x, y);
     };
@@ -1019,12 +1081,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     ctx.translate(500, 435);
     ctx.shadowColor = "#1b0d2988";
     ctx.shadowBlur = 12;
-    circle(0, 0, 178, "#3a2548", def2.colors[2]);
+    circle(0, 0, 190, "#3a2548", def2.colors[2]);
     ctx.shadowBlur = 0;
-    circle(0, 0, 171, "#32223f", "#bd96b977");
+    circle(0, 0, 183, "#32223f", "#bd96b977");
     ctx.save();
     ctx.beginPath();
-    ctx.arc(0, 0, 168, 0, TAU);
+    ctx.arc(0, 0, 180, 0, TAU);
     ctx.clip();
     for (let i = 0; i < 16; i++) {
       const x = i * 71 % 310 - 155, y = i * 91 % 306 - 153;
@@ -1032,30 +1094,35 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     }
     switch (mode) {
       case "baggage": {
-        const weights = e && p < 0.45 ? before.weights : d.weights;
-        for (let i = 0; i < weights.length; i++) {
-          const x = -100 + i % 4 * 65, y = 66 - Math.floor(i / 4) * 61, bounce = e && i === weights.length - 1 ? Math.sin(p * Math.PI) * -35 : 0;
-          sprite("parcel", x, y + bounce, 65, i);
-          text(weights[i] + "kg", x, y + 27 + bounce, 15);
+        const rows = Math.max(1, Math.ceil(d.weights.length / 4)), size = Math.min(64, 152 / rows), gap = Math.min(60, size + 4);
+        for (let i = 0; i < d.weights.length; i++) {
+          const x = -96 + i % 4 * 64, y = 75 - Math.floor(i / 4) * gap, newest = e && i === d.weights.length - 1;
+          const q = newest ? phase(160, 1050) : 1, drop = newest ? (1 - q) * -155 : 0;
+          sprite("parcel", x, y + drop, size, i, newest ? Math.sin(q * Math.PI) * 0.12 : 0, newest ? 0.35 + q * 0.65 : 1);
+          text(d.weights[i] + "kg", x, y + 23 + drop, 15);
         }
-        rect(-106, 109, 212, 19, "#8e647b");
-        rect(-84, 128, 168, 8, "#e7bd97");
-        text("HEAVIEST RATE", 0, -124, 16, def2.colors[2]);
-        text("$" + d.rate * s.round.prices.cash + " / KG", 0, -94, 28, gold);
-        text(d.weight + " KG PACKED", 0, -52, 18);
+        rect(-126, 108, 252, 14, "#8e647b");
+        rect(-101, 122, 202, 7, "#e7bd97");
+        text("HEAVIEST RATE", 0, -135, 16, def2.colors[2]);
+        text("$" + Math.round(lerp(before.rate, d.rate, p) * s.round.prices.cash) + " / KG", 0, -105, 27, gold);
+        text(Math.round(lerp(before.weight, d.weight, p)) + " KG PACKED", 0, -69, 18);
         break;
       }
       case "auction": {
-        const top = [...d.bids].sort((a, b) => b - a).slice(0, 2), count = d.bids.length;
-        text("THE TOP TWO BOTH COUNT", 0, -127, 14, def2.colors[2]);
-        for (let i = 0; i < count; i++) {
-          const x = -98 + i % 4 * 66, y = -56 + Math.floor(i / 4) * 54, isTop = top.includes(d.bids[i]);
-          rect(x - 22, y - 18, 44, 39, isTop ? "#aa7095" : "#5a4169", isTop ? gold : "#a786ae");
-          rect(x - 3, y + 21, 6, 18, "#b89183");
-          text("$" + d.bids[i], x, y, Math.min(19, 75 / String(d.bids[i]).length), cream);
+        const ranked = d.bids.map((value, index) => ({ value, index })).sort((a, b) => b.value - a.value).slice(0, 2), cols = 4, rows = Math.ceil(d.bids.length / cols), gap = Math.min(54, 145 / Math.max(1, rows));
+        text("THE TOP TWO BOTH COUNT", 0, -131, 14, def2.colors[2]);
+        for (let i = 0; i < d.bids.length; i++) {
+          const q = e && i === d.bids.length - 1 ? phase(180, 900) : 1, x = -98 + i % cols * 66, y = -65 + Math.floor(i / cols) * gap + (1 - q) * 35, isTop = ranked.some((v) => v.index === i);
+          ctx.save();
+          ctx.globalAlpha *= q;
+          rect(x - 25, y - 18, 50, 36, isTop ? "#aa7095" : "#5a4169", isTop ? gold : "#a786ae");
+          rect(x - 3, y + 18, 6, 16, "#b89183");
+          text("$" + d.bids[i], x, y, 19, cream, 44);
+          ctx.restore();
         }
-        sprite("gavel", 53, 95, 76, 0, e && s.round.phase === "complete" ? Math.sin(p * Math.PI) * -0.7 : 0);
-        text("SOLD x 2", -48, 117, 21, gold);
+        const strike = e && s.round.phase === "complete" ? phase(850, 1350) : 0;
+        sprite("gavel", 57, 106, 71, 0, -Math.sin(strike * Math.PI) * 0.65);
+        text(s.round.phase === "complete" ? "SOLD x 2" : "TOP TWO PAY", -45, 127, 18, gold);
         break;
       }
       case "race": {
@@ -1066,88 +1133,108 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           for (let k = 0; k < 7; k++) rect(-125 + k * 38, y + 21, 18, 2, "#e7cfe344");
           const pos = lerp(before.distance[i], d.distance[i], p) / d.finish;
           const x = -102 + Math.min(1, pos) * 204;
-          sprite("horse", x, y - 3, 59, i, s.reduced ? 0 : Math.sin(t / 110 + i) * 0.025);
-          text(d.distance[i], -140, y + 4, 22, [pink, lilac, mint][i]);
+          sprite("horse", x, y - 3 - (before.distance[i] !== d.distance[i] && !s.reduced ? Math.abs(Math.sin(p * Math.PI * 6)) * Math.sin(p * Math.PI) * 6 : 0), 59, i, s.reduced ? 0 : Math.sin(p * Math.PI * 6) * Math.sin(p * Math.PI) * 0.04);
+          text(Math.round(lerp(before.distance[i], d.distance[i], p)), -140, y + 4, 22, [pink, lilac, mint][i]);
         }
-        for (let y = -111; y < 117; y += 16) for (let j = 0; j < 2; j++) rect(122 + j * 8, y, 8, 8, (y / 16 + j) % 2 ? "#fce3cf" : "#88718d");
+        for (let y = -111; y < 117; y += 16) for (let j = 0; j < 2; j++) rect(122 + j * 8, y, 8, 8, (Math.floor((y + 111) / 16) + j) % 2 ? "#fce3cf" : "#88718d");
         break;
       }
       case "stamps": {
+        const stamp = phase(180, 750), lineP = phase(750, 1250);
         for (let i = 0; i < 9; i++) {
-          const x = -65 + i % 3 * 65, y = -65 + Math.floor(i / 3) * 65, stamped = d.marks[i] > 0;
-          rect(x - 27, y - 27, 55, 55, stamped ? "#9571a1" : "#e9d4c2", stamped ? gold : "#c8a9ba");
-          if (stamped) {
-            sprite("stamp", x, y, 48, i);
-            text("$" + d.marks[i], x, y + 15, Math.min(20, 70 / String(d.marks[i]).length), cream);
+          const x = -65 + i % 3 * 65, y = -65 + Math.floor(i / 3) * 65, changed = e?.fx.index === i, marked = changed ? stamp > 0.65 : d.marks[i] > 0;
+          rect(x - 27, y - 27, 55, 55, marked ? "#9571a1" : "#e9d4c2", marked ? gold : "#c8a9ba");
+          if (marked) {
+            sprite("stamp", x, y - 6, 39, i);
+            rect(x - 24, y + 7, 48, 18, "#4c345d");
+            text("$" + d.marks[i], x, y + 16, 16, cream, 45);
           } else text(i + 1, x, y, 25, "#775271");
+          if (changed && stamp < 1) {
+            sprite("stamp", x, y - 85 * (1 - stamp), 55 + 14 * (1 - stamp), i, 0, 1 - stamp * 0.3);
+          }
         }
         const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8]];
         for (const i of d.lines) {
-          const ends = [lines[i][0], lines[i][2]].map((v) => [-65 + v % 3 * 65, -65 + Math.floor(v / 3) * 65]);
-          ctx.globalAlpha = 0.5;
-          line(ends, gold, 5);
-          ctx.globalAlpha = 1;
+          const q = before.lines.includes(i) ? 1 : lineP, ends = [lines[i][0], lines[i][2]].map((v) => [-65 + v % 3 * 65, -65 + Math.floor(v / 3) * 65]);
+          ctx.save();
+          ctx.globalAlpha *= 0.7;
+          line([ends[0], [lerp(ends[0][0], ends[1][0], q), lerp(ends[0][1], ends[1][1], q)]], gold, 4);
+          ctx.restore();
         }
-        text(d.lines.length + " DUTY LINES", 0, 132, 18, gold);
+        text((lineP < 1 ? before.lines.length : d.lines.length) + " DUTY LINES", 0, 132, 18, gold);
         break;
       }
       case "bubble": {
-        const pop = e && d.pops > before.pops, inflate = pop && age < 900 ? lerp(before.air / before.capacity, 1, clamp(age / 800)) : lerp(before.air / before.capacity, d.air / d.capacity, p), size = 90 + inflate * 137;
-        if (pop && age > 750 && age < 1550 && !s.reduced) {
-          const q = (age - 750) / 800;
-          for (let i = 0; i < 16; i++) {
+        const pop = e && d.pops > before.pops, inflate = phase(150, pop ? 850 : 1500), burst2 = phase(850, 1250), refill = phase(1250, 1800);
+        const oldRatio = before.air / before.capacity, newRatio = d.air / d.capacity;
+        if (pop) {
+          const size = 90 + 137 * lerp(oldRatio, 1, inflate);
+          sprite("bubble", 0, -14, size, before.pops % 3, 0, 1 - burst2);
+          if (!s.reduced && burst2 > 0 && burst2 < 1) for (let i = 0; i < 16; i++) {
             const a = i * TAU / 16;
-            circle(Math.cos(a) * (70 + q * 75), Math.sin(a) * (70 + q * 75), 9 * (1 - q), [pink, lilac, mint][i % 3]);
+            circle(Math.cos(a) * (85 + burst2 * 85), -14 + Math.sin(a) * (85 + burst2 * 85), 9 * (1 - burst2), [pink, lilac, mint][i % 3]);
           }
-        }
-        sprite("bubble", 0, -14, size, d.pops % 3, 0, pop && age > 750 && age < 1100 ? 0.25 : 1);
-        text(d.air + " / " + d.capacity + " AIR", 0, 111, 24, def2.colors[2]);
-        text(d.pops + " POP BONUSES", 0, 140, 16);
+          sprite("bubble", 0, -14, 90 + newRatio * 137, d.pops % 3, 0, refill);
+        } else sprite("bubble", 0, -14, 90 + lerp(oldRatio, newRatio, inflate) * 137, d.pops % 3);
+        const settled = !pop ? inflate >= 1 : refill >= 1;
+        text((settled ? d.air : Math.round(lerp(before.air, pop ? before.capacity : d.air, inflate))) + " / " + (settled ? d.capacity : before.capacity) + " AIR", 0, 116, 24, def2.colors[2]);
+        text((settled ? d.pops : before.pops) + " POP BONUSES", 0, 144, 16);
         break;
       }
       case "seats": {
+        const moved = e?.moved || [], move = phase(160, 1150), arrive = phase(moved.length ? 1050 : 160, moved.length ? 1700 : 950);
         for (let i = 0; i < 6; i++) {
           const a = -Math.PI / 2 + i * TAU / 6, x = Math.cos(a) * 107, y = Math.sin(a) * 107;
           sprite("chair", x, y, 63, i);
           text(i + 1, x, y + 29, 14, gold);
-          if (d.occupied[i]) sprite("charm", x, y - 5, 25, i % 3);
+          if (e && age < 1800 && !s.reduced) {
+            if (before.occupied[i] && !moved.includes(i)) sprite("charm", x, y - 5, 25, 0);
+          } else if (d.occupied[i]) sprite("charm", x, y - 5, 25, 0);
         }
-        if (e && !s.reduced && p < 1) for (const i of e.moved || []) {
-          const a = -Math.PI / 2 + (i + p) * TAU / 6;
-          sprite("charm", Math.cos(a) * 107, Math.sin(a) * 107 - 10, 34, i % 3);
+        if (e && age < 1800 && !s.reduced) {
+          for (const i of moved) {
+            const a2 = -Math.PI / 2 + (i + move) * TAU / 6;
+            sprite("charm", Math.cos(a2) * 107, Math.sin(a2) * 107 - 5 - arc(move, 10), 25, 0);
+          }
+          const a = -Math.PI / 2 + e.fx.index * TAU / 6;
+          sprite("charm", Math.cos(a) * 107, Math.sin(a) * 107 - 5 - 90 * (1 - arrive), 25, 0, 0, arrive);
         }
         text("GUESTS MOVED", 0, -15, 13);
-        text(d.moves, 0, 20, 38, gold);
+        text(Math.round(lerp(before.moves, d.moves, move)), 0, 20, 38, gold);
         if (d.standing) text("STANDING: " + d.standing, 0, 53, 14, pink);
         break;
       }
       case "blocks": {
-        for (let col = 0; col < 4; col++) for (let row = 0; row < 8; row++) rect(-62 + col * 33, 102 - row * 28, 30, 25, "#4c385d", "#715275");
-        const clearing = e?.cleared && age < 1300, heights = clearing ? before.heights.map((h, i) => h + (i === e.fx.item.column ? e.fx.item.value : 0)) : d.heights;
-        for (let col = 0; col < 4; col++) for (let row = 0; row < Math.min(8, heights[col]); row++) {
-          const y = 102 - row * 28;
-          rect(-62 + col * 33, y, 30, 25, [pink, lilac, mint, gold][col]);
+        const drop = phase(180, 900), clear = phase(1e3, 1400), settle = phase(1400, 1850), added = e?.fx.item;
+        for (let col = 0; col < 4; col++) for (let row = 0; row < 10; row++) rect(-62 + col * 33, 115 - row * 25, 30, 22, "#4c385d", "#715275");
+        const heights = e ? before.heights.map((h, i) => h + (i === added.column ? added.value : 0)) : d.heights;
+        for (let col = 0; col < 4; col++) for (let row = 0; row < Math.min(10, heights[col]); row++) {
+          const fresh = e && col === added.column && row >= before.heights[col], cleared = e && row < e.cleared;
+          const y = 115 - row * 25 - (fresh ? (1 - drop) * 200 : 0) + (e && !cleared ? e.cleared * 25 * settle : 0);
+          ctx.save();
+          ctx.globalAlpha *= cleared ? 1 - clear : 1;
+          rect(-62 + col * 33, y, 30, 22, [pink, lilac, mint, gold][col]);
           rect(-59 + col * 33, y + 3, 23, 3, "#fff3db99");
-          rect(-36 + col * 33, y + 6, 3, 17, "#49294266");
+          rect(-36 + col * 33, y + 6, 3, 14, "#49294266");
+          if (cleared && clear > 0) {
+            ctx.globalAlpha *= Math.sin(clear * Math.PI) * 0.7;
+            rect(-62 + col * 33, y, 30, 22, "#fff7d9");
+          }
+          ctx.restore();
         }
-        if (clearing) {
-          ctx.globalAlpha = s.reduced ? 0.4 : Math.sin(age / 80) * 0.3 + 0.5;
-          rect(-64, 105 - e.cleared * 28, 134, e.cleared * 28, "#fff7d9");
-          ctx.globalAlpha = 1;
-        }
-        text(d.lines + " ROWS CLEARED", 0, 145, 16, gold);
+        text((settle < 1 ? before.lines : d.lines) + " ROWS CLEARED", 0, 151, 16, gold);
         break;
       }
       case "charms": {
         line([[-122, -65], [-70, -9], [0, 16], [70, -9], [122, -65]], gold, 5);
         for (let i = 0; i < 3; i++) {
-          const x = -92 + i * 92, y = i === 1 ? 8 : -11;
-          const count = d.counts[i];
-          sprite("charm", x, y, 70, i, 0, count ? 1 : 0.35);
-          text(count + (count === 1 ? " COPY" : " COPIES"), x, y + 59, 20);
-          text("$" + count * s.round.prices.cash * (i + 1) + " EACH", x, y + 83, 18, gold);
+          const x = -92 + i * 92, y = i === 1 ? 8 : -11, changed = e?.fx.item.charm === i, q = changed ? phase(180, 1e3) : 1, count = changed && q < 0.8 ? before.counts[i] : d.counts[i];
+          sprite("charm", x, y, 70 + (changed ? arc(q, 12) : 0), i, changed ? Math.sin(q * Math.PI * 2) * 0.13 : 0, count ? 1 : 0.35);
+          if (changed && q < 1) sprite("charm", x, y - 100 * (1 - q), 42, i, 0, q * (1 - q) * 3);
+          text(count + (count === 1 ? " COPY" : " COPIES"), x, y + 59, 18, cream, 82);
+          text("$" + count * s.round.prices.cash * (i + 1) + " EACH", x, y + 83, 17, gold, 82);
         }
-        text("EVERY COPY GETS REPRICED", 0, -119, 14, def2.colors[2]);
+        text("EVERY COPY GETS REPRICED", 0, -127, 14, def2.colors[2]);
         break;
       }
       case "toll": {
@@ -1161,26 +1248,32 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         ctx.stroke();
         ctx.setLineDash([]);
         for (let i = 0; i < 12; i++) {
-          const a2 = -Math.PI / 2 + i * TAU / 12, x = Math.cos(a2) * (i % 3 === 0 ? 146 : 118), y = Math.sin(a2) * (i % 3 === 0 ? 146 : 118);
+          const a2 = -Math.PI / 2 + i * TAU / 12, x = Math.cos(a2) * (i % 3 === 0 ? 152 : 118), y = Math.sin(a2) * (i % 3 === 0 ? 152 : 118);
           if (i % 3 === 0) {
-            rect(x - 19, y - 14, 38, 29, "#b6819d", gold);
-            text("$" + (i === 0 ? 4 : i / 3) * s.round.prices.cash, x, y, 15, cream);
+            rect(x - 23, y - 14, 46, 29, "#b6819d", gold);
+            text("$" + (i === 0 ? 4 : i / 3) * s.round.prices.cash, x, y, 15, cream, 40);
           } else circle(x, y, 3, "#f8dbb6");
         }
-        const progress = lerp(before.travel, d.travel, p), a = -Math.PI / 2 + progress * TAU / 12;
+        const travel = lerp(before.travel, d.travel, p), a = -Math.PI / 2 + travel * TAU / 12;
         sprite("car", Math.cos(a) * 105, Math.sin(a) * 105, 47, 0, a + Math.PI / 2);
-        text(d.gates, 0, -11, 42, gold);
+        const crossed = e ? e.stops.slice(0, Math.floor((d.travel - before.travel) * p + 1e-5)).filter((v) => v % 3 === 0).length : 0;
+        text(e ? before.gates + crossed : d.gates, 0, -11, 42, gold);
         text("TOLLS", 0, 29, 16);
         break;
       }
       case "credit": {
-        sprite("card", 0, -26, 219);
-        const ratio = Math.min(1, d.spent / d.limit);
+        const spend = phase(180, 1050), shown = Math.round(lerp(before.spent, d.spent, spend)), ratio = Math.min(1, shown / d.limit), decline = phase(850, 1200);
+        sprite("card", 0, -26, 219, 0, d.over && !s.reduced ? Math.sin(decline * Math.PI * 2) * 0.05 : 0);
         rect(-112, 67, 224, 20, "#22132f", "#c7a7ce");
         rect(-109, 70, 218 * ratio, 14, ratio === 1 ? pink : mint);
-        text("$" + d.spent + " / $" + d.limit, 0, 112, 20, def2.colors[2]);
-        text(d.over ? "OVER LIMIT +$" + d.over : "AVAILABLE CREDIT", 0, -126, 17, d.over ? pink : cream);
-        if (d.over) line([[-82, -52], [-35, -20], [-14, -44], [12, -4], [38, -19], [79, 23]], "#fff1e3", 4);
+        text("$" + shown + " / $" + d.limit, 0, 112, 20, def2.colors[2]);
+        text(d.over && shown > d.limit ? "OVER LIMIT +$" + (shown - d.limit) : "AVAILABLE CREDIT", 0, -126, 17, d.over ? pink : cream);
+        if (d.over) {
+          ctx.save();
+          ctx.globalAlpha *= decline;
+          line([[-82, -52], [-35, -20], [-14, -44], [12, -4], [38, -19], [79, 23]], "#fff1e3", 4);
+          ctx.restore();
+        }
         break;
       }
       case "map": {
@@ -1188,44 +1281,58 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         for (let i = 0; i < 9; i++) {
           const x2 = -64 + i % 3 * 64, y2 = -64 + Math.floor(i / 3) * 64;
           rect(x2 - 28, y2 - 28, 56, 56, i % 2 ? "#9e9c7d" : "#7d9b87", "#d9d7b0");
-          text("$" + values[i] * s.round.prices.cash, x2, y2 + 13, 20, "#fff4df");
+          text("$" + values[i] * s.round.prices.cash, x2, y2 + 13, 20, "#fff4df", 48);
           rect(x2 - 20, y2 - 18, 8, 7, "#bed5ae");
           rect(x2 - 10, y2 - 22, 9, 9, "#b7d6b0");
         }
         let x = lerp(before.x, d.x, p), y = lerp(before.y, d.y, p);
-        if (e?.wrap) {
-          x = p < 0.5 ? before.x : d.x;
-          y = p < 0.5 ? before.y : d.y;
-          ctx.globalAlpha = Math.abs(p * 2 - 1);
+        if (e?.wrap && !s.reduced) {
+          const [dx, dy] = [[0, -1], [1, 0], [0, 1], [-1, 0]][e.fx.item.direction];
+          const q = p < 0.5 ? p * 2 : (p - 0.5) * 2;
+          x = p < 0.5 ? before.x + dx * q : d.x - dx * (1 - q);
+          y = p < 0.5 ? before.y + dy * q : d.y - dy * (1 - q);
+          ctx.globalAlpha *= p < 0.5 ? 1 - q : q;
         }
-        sprite("compass", -64 + x * 64, -77 + y * 64, 48);
+        sprite("compass", -64 + x * 64, -82 + y * 64 - arc(p, 8), 32);
         ctx.globalAlpha = 1;
         text(d.detours + (d.detours === 1 ? " DETOUR" : " DETOURS"), 0, 130, 20, gold);
         break;
       }
       case "plinko": {
         for (let row = 0; row < 6; row++) for (let col = 0; col < 5; col++) circle(-96 + col * 48, -115 + row * 31, 3, "#e7c9de");
-        const factors = [1, 3, 8, 3, 1];
+        const drop = s.reduced ? 1 : clamp((age - 180) / 1750), path = d.path.length ? d.path : [2, 2, 2, 2, 2, 2, 2], q = drop * 6, segment = Math.min(5, Math.floor(q)), fract = q - segment;
+        const x = -96 + lerp(path[segment], path[segment + 1], smooth(fract)) * 48, y = lerp(-132, 101, drop) - Math.sin(fract * Math.PI) * 11;
+        const factors = [1, 3, 8, 3, 1], lane = path[6];
         for (let col = 0; col < 5; col++) {
-          rect(-118 + col * 48, 88, 44, 26, col === 2 ? "#a27b48" : "#75577f", col === 2 ? gold : "#d7b3d6");
-          text("$" + s.round.prices.cash * factors[col], -96 + col * 48, 101, Math.min(18, 70 / String(s.round.prices.cash * factors[col]).length), cream);
+          rect(-118 + col * 48, 88, 44, 26, d.path.length && drop === 1 && lane === col ? "#be8c58" : col === 2 ? "#a27b48" : "#75577f", d.path.length && drop === 1 && lane === col ? cream : col === 2 ? gold : "#d7b3d6");
+          text("$" + s.round.prices.cash * factors[col], -96 + col * 48, 101, 17, cream, 38);
         }
-        const path = d.path.length ? d.path : [2, 2, 2, 2, 2, 2, 2], q = p * 6, segment = Math.min(5, Math.floor(q)), fract = q - segment, x = -96 + lerp(path[segment], path[segment + 1], fract) * 48, y = -118 + q * 30.5;
-        sprite("marble", x, y, 35, 0);
+        if (!e) {
+          if (d.path.length) sprite("marble", -96 + lane * 48, 71, 28);
+          else sprite("marble", 0, -132, 30);
+        } else sprite("marble", x, Math.min(y, 71), 28, 0, Math.sin(drop * Math.PI) * Math.PI);
         break;
       }
       case "encore": {
+        const press = phase(150, 650), celebrate = phase(700, 1300), song = e && d.songs > before.songs;
         for (let i = 0; i < 3; i++) {
-          const x = -93 + i * 93, lit = i < d.note || e && d.songs > before.songs && age < 1600;
-          rect(x - 35, -61, 70, 88, lit ? "#ae7fa9" : "#654676", lit ? gold : "#a78abc");
-          text(["C", "E", "G"][i], x, -16, 42, lit ? gold : cream);
+          const x = -93 + i * 93, glow = song ? 1 - celebrate : i < (press < 0.8 ? before.note : d.note) ? 1 : 0;
+          rect(x - 35, -61, 70, 88, "#654676", "#a78abc");
+          text(["C", "E", "G"][i], x, -16, 42, cream);
+          ctx.save();
+          ctx.globalAlpha *= glow;
+          rect(x - 35, -61, 70, 88, "#ae7fa9", gold);
+          text(["C", "E", "G"][i], x, -16, 42, gold);
+          ctx.restore();
         }
         for (let i = 0; i < 7; i++) {
-          rect(-105 + i * 30, 65, 28, 52, "#ead8e4", "#5e416a");
+          const active = e && [0, 2, 4][e.fx.item.note] === i, depth = active ? arc(press, 7) : 0;
+          rect(-105 + i * 30, 65 + depth, 28, 52 - depth, active && press < 1 ? "#f8d2db" : "#ead8e4", "#5e416a");
           if (i < 6) rect(-85 + i * 30, 65, 11, 31, "#563d67");
         }
-        if (e && !s.reduced) sprite("note", -93 + e.fx.item.note * 93, -105 + p * 36, 55, e.hit ? 0 : 1, p * 0.3);
-        text(d.songs + (d.songs === 1 ? " ENCORE" : " ENCORES"), 0, 152, 16, gold);
+        if (e && p < 1) sprite("note", -93 + e.fx.item.note * 93, -70 - p * 65, 55, e.hit ? 0 : 1, Math.sin(p * Math.PI) * 0.2, 1 - p);
+        const songs = celebrate < 1 ? before.songs : d.songs;
+        text(songs + (songs === 1 ? " ENCORE" : " ENCORES"), 0, 152, 16, gold);
         break;
       }
       case "bowling": {
@@ -1238,45 +1345,64 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         ctx.closePath();
         ctx.fill();
         for (let i = -2; i <= 2; i++) line([[i * 30, -113], [i * 47, 168]], "#e7c5a555", 2);
-        const positions = [[0, -31], [-24, -58], [24, -58], [-48, -85], [0, -85], [48, -85], [-72, -112], [-24, -112], [24, -112], [72, -112]];
+        const roll = phase(150, 1100), fall = phase(1e3, 1600), rack = phase(1650, 2050), positions = [[0, -31], [-24, -58], [24, -58], [-48, -85], [0, -85], [48, -85], [-72, -112], [-24, -112], [24, -112], [72, -112]];
         for (let i = 9; i >= 0; i--) {
-          const existed = before.pins[i], fallen = e?.fallen?.includes(i), active = e ? existed : d.pins[i], after = p > 0.8;
-          if (!active || fallen && after && p >= 1) continue;
-          const [x, y] = positions[i];
-          sprite("pin", x + (fallen && p > 0.6 ? (p - 0.6) * 60 * (i % 2 ? 1 : -1) : 0), y + (fallen && p > 0.6 ? (p - 0.6) * 40 : 0), 42, 0, fallen && p > 0.6 ? (p - 0.6) * 3 : 0, fallen && p > 0.6 ? 1 - (p - 0.6) * 2.5 : 1);
+          const fallen = e?.fallen?.includes(i), standing = e ? before.pins[i] : d.pins[i], [x, y] = positions[i];
+          if (standing && (!fallen || fall < 1)) sprite("pin", x + (fallen ? fall * 26 * (i % 2 ? 1 : -1) : 0), y + (fallen ? fall * 22 : 0), 42, 0, fallen ? fall * 1.3 : 0, fallen ? 1 - fall : 1);
+          if (e?.strike && d.pins[i] && rack > 0) sprite("pin", x, y - 35 * (1 - rack), 42, 0, 0, rack);
         }
-        sprite("marble", e ? Math.sin(p * Math.PI) * (e.fx.item.aim === 0 ? -70 : e.fx.item.aim === 1 ? 70 : 0) : 0, e ? lerp(147, -28, p) : 138, 52, 1);
-        text("RACKS CLEARED: " + d.racks, 0, 152, 15, gold);
+        if (!e && s.round.phase !== "complete") sprite("marble", 0, 138, 48, 1);
+        else if (roll < 1 || fall < 1) {
+          const aim = e.fx.item.aim, curve = aim === 0 ? -65 : aim === 1 ? 65 : aim === 5 ? 130 : 0;
+          sprite("marble", Math.sin(roll * Math.PI / 2) * curve, lerp(147, aim === 5 ? -130 : -28, roll), 48 - 12 * roll, 1, roll * TAU, 1 - fall);
+        }
+        if (e && s.round.phase !== "complete" && rack > 0) sprite("marble", 0, 138 + 25 * (1 - rack), 48, 1, 0, rack);
+        rect(-103, 137, 206, 29, "#4d344e");
+        text("RACKS CLEARED: " + (rack < 1 ? before.racks : d.racks), 0, 152, 15, gold);
         break;
       }
       case "tower": {
-        const floors = d.floors.slice(-9), base = 112, start = Math.max(0, d.floors.length - 9);
+        const start = Math.max(0, d.floors.length - 10), floors = d.floors.slice(start), base = 112, slide = phase(150, 1e3), fall = phase(1050, 1750);
+        const camera = lerp(Math.max(0, before.floors.length - 9), Math.max(0, d.floors.length - 9), phase(80, 800));
         rect(-128, base + 18, 256, 12, "#ad8d90");
         floors.forEach((floor, i) => {
-          const y = base - i * 27, isLast = i === floors.length - 1, x = -80 + floor.x * 20 + (isLast && e ? (1 - p) * 180 * (floor.dir || 1) : 0);
+          const y = base - (i + start - camera) * 27, isLast = i === floors.length - 1, x = -80 + floor.x * 20 + (isLast && e ? (1 - slide) * 180 * (floor.dir || 1) : 0);
+          ctx.save();
+          ctx.globalAlpha *= 1 - smooth((y - base) / 22);
           for (let k = 0; k < floor.width; k++) {
             rect(x + k * 20, y, 19, 24, [pink, lilac, mint][(i + start) % 3]);
             rect(x + k * 20 + 2, y + 2, 15, 3, "#fff0da99");
           }
-          if (isLast && floor.cut && e && p < 1) {
+          if (isLast && floor.cut && e && fall < 1) {
             const cutX = floor.dir < 0 ? x - floor.cut * 20 : x + floor.width * 20;
-            for (let k = 0; k < floor.cut; k++) rect(cutX + k * 20, y + p * p * 190, 18, 23, "#a4829d");
+            for (let k = 0; k < floor.cut; k++) rect(cutX + k * 20, y + fall * fall * 230, 18, 23, "#a4829d");
           }
+          ctx.restore();
         });
         text(d.width + " WIDE / " + d.waste + " OFFCUTS", 0, -145, 16, gold);
         break;
       }
       case "boss": {
-        const hit = e && !e.fx.item.heal, shake = hit && !s.reduced ? Math.sin(age / 38) * Math.max(0, 1 - age / 650) * 12 : 0, dead = d.hp === 0;
-        const hp = lerp(before.hp, d.hp, p);
+        const impact = phase(160, 700), hit = e && !e.fx.item.heal, shake = hit && !s.reduced ? Math.sin(age / 70) * Math.sin(impact * Math.PI) * 5 : 0, dead = d.hp === 0;
+        const hp = lerp(before.hp, d.hp, phase(220, 950));
         rect(-116, -133, 232, 22, "#25152f", "#c9a0bd");
         rect(-113, -130, 226 * hp / d.max, 16, dead ? gold : pink);
-        sprite("pig", shake, 9, 185, 0, dead ? p * 0.3 : 0, dead ? 1 - p * 0.45 : 1);
-        text(Math.ceil(hp) + " / " + d.max + " HP", 0, -95, 20, cream);
+        sprite("pig", shake, 9 + (dead ? phase(600, 1e3) * 15 : 0), 185, 0, dead ? phase(600, 1e3) * 0.22 : 0, dead ? 1 - phase(600, 1e3) * 0.35 : 1);
+        text(Math.ceil(hp) + " / " + d.max + " HP", 0, -95, 20);
         if (e?.fx.item.heal) {
-          sprite("charm", -89, -5 - (s.reduced ? 0 : p * 50), 43, 0, 0, 1 - p * 0.6);
-          text(e.healed ? "+" + e.healed + " HP" : "FULL HEALTH", 0, 124, 26, mint);
-        } else text(dead ? "BOUNTY BILLED" : "BOSS BILL", 0, 128, 23, gold);
+          const heal = phase(100, 950);
+          sprite("charm", -89, -5 - heal * 65, 43, 0, 0, 1 - heal);
+          if (age < 1250) {
+            ctx.save();
+            ctx.globalAlpha *= 1 - phase(950, 1250);
+            text(e.healed ? "+" + e.healed + " HP" : "FULL HEALTH", 0, 124, 26, mint);
+            ctx.restore();
+          }
+          ctx.save();
+          ctx.globalAlpha *= phase(950, 1250);
+          text("BOSS BILL", 0, 128, 23, gold);
+          ctx.restore();
+        } else text(dead && hp < 0.5 ? "BOUNTY BILLED" : "BOSS BILL", 0, 128, 23, gold);
         break;
       }
     }
@@ -1290,25 +1416,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   var CY = 435;
   var R = 310;
   var clamp2 = (n) => Math.max(0, Math.min(1, n));
-  var ease2 = (t) => 1 - Math.pow(1 - t, 3);
-  var mix = (a, b, t) => a + (b - a) * t;
-  function bezier(t, x1, y1, x2, y2) {
-    const p = (s2, a, b) => 3 * (1 - s2) * (1 - s2) * s2 * a + 3 * (1 - s2) * s2 * s2 * b + s2 * s2 * s2;
-    let lo = 0, hi = 1, s = t;
-    for (let i = 0; i < 14; i++) {
-      s = (lo + hi) / 2;
-      if (p(s, x1, x2) < t) lo = s;
-      else hi = s;
-    }
-    return p(s, y1, y2);
-  }
-  function rotationAt(s, t) {
-    if (!s.motion) return s.rotation;
-    const m = s.motion, x = clamp2((t - m.at) / m.duration);
-    if (s.reduced) return m.to;
-    if (x < 0.09) return mix(m.from, m.from - 8, bezier(x / 0.09, 0.35, 0, 0.7, 0.45));
-    return mix(m.from - 8, m.to, bezier((x - 0.09) / 0.91, 0.3, 0.09, 0.18, 1));
-  }
+  var ease = (t) => 1 - Math.pow(1 - t, 3);
+  var mix2 = (a, b, t) => a + (b - a) * t;
+  var rotationAt = wheelRotation;
   var sprites = {
     heart: ["..pp.pp..", ".ppppppp.", "ppppppppp", "ppppppppp", ".ppppppp.", "..ppppp..", "...ppp...", "....p...."],
     crown: ["g...g...g", "gg.ggg.gg", "ggggggggg", ".ggggggg.", ".ggpgpgg.", ".ggggggg.", ".fffffff."],
@@ -1321,7 +1431,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     const dpi = Math.min(1.5, window.devicePixelRatio || 1);
     canvas2.width = 1e3 * dpi;
     canvas2.height = 920 * dpi;
-    let ctx = canvas2.getContext("2d"), cache2 = null, cacheKey = "", reduceMotion = false;
+    let ctx = canvas2.getContext("2d"), cache2 = null, reduceMotion = false;
+    const wheels = /* @__PURE__ */ new Map(), itemKeys = /* @__PURE__ */ new WeakMap();
+    let pointerTicks = [];
     const P = { pink: "#e58abd", lilac: "#bca3e6", cream: "#fff2dc", ink: "#512545", gold: "#ffd98c", dark: "#422044" };
     function tint(hex, amount) {
       const n = parseInt(hex.slice(1), 16);
@@ -1460,9 +1572,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.restore();
     }
     function wheelCache(s, roulette) {
-      const items = s.items, key = JSON.stringify([s.scene, roulette, items, s.theme]);
-      if (key === cacheKey && cache2) return cache2;
-      cacheKey = key;
+      const items = s.items;
+      if (!itemKeys.has(items)) itemKeys.set(items, JSON.stringify(items));
+      const key = s.scene + roulette + itemKeys.get(items) + JSON.stringify(s.theme);
+      if (wheels.has(key)) return wheels.get(key);
       cache2 = document.createElement("canvas");
       cache2.width = 1080;
       cache2.height = 1080;
@@ -1548,10 +1661,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ctx.save();
           ctx.translate(Math.cos(m) * 221, Math.sin(m) * 221);
           ctx.rotate(m + Math.PI / 2);
-          text(item2.name, 0, -68, 17, P.cream, 1e3, true);
-          house(0, -15, 76, item2.level, i);
-          text(item2.level ? "RENT $" + item2.rent : "+$" + item2.value + " RENT", 0, 47, fit(item2.level ? "RENT $" + item2.rent : "+$" + item2.value + " RENT", 21, 153), P.cream, 1e3, true);
-          if (item2.level) text("LV " + item2.level, 0, 71, 13, P.gold, 1e3, true);
+          text(item2.name, 0, -48, 17, P.cream, 1e3, true);
+          house(0, 16, 48, item2.level, i);
+          text(item2.level ? "RENT $" + item2.rent : "+$" + item2.value + " RENT", 0, 61, fit(item2.level ? "RENT $" + item2.rent : "+$" + item2.value + " RENT", 21, 153), P.cream, 1e3, true);
           ctx.restore();
         }
       } else if (s.scene === "gumball") {
@@ -1606,6 +1718,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         circle(0, 0, R - 7, null, "#f5bcdf55", 3);
       }
       ctx = main;
+      wheels.set(key, cache2);
+      if (wheels.size > 5) wheels.delete(wheels.keys().next().value);
       return cache2;
     }
     function glowStroke(color, width = 3, blur = 18) {
@@ -1633,9 +1747,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.save();
       ctx.rotate(angle * Math.PI / 180);
       ctx.drawImage(image, -360, -360, 720, 720);
-      if (s.selected !== null && !s.motion) {
+      const selection = s.selection || (s.selected !== null ? { index: s.selected, at: t - 250 } : null);
+      const highlight = selection ? overlayOpacity(selection, t, s.reduced) : 0;
+      if (highlight > 0 && (!s.motion || selection.exitAt !== void 0)) {
+        ctx.save();
+        ctx.globalAlpha *= highlight;
         circle(0, 0, R, "#26132a66");
-        const n = s.items.length, i = s.selected, a = i * TAU2 / n - Math.PI, b = a + TAU2 / n;
+        const n = s.items.length, i = selection.index, a = i * TAU2 / n - Math.PI, b = a + TAU2 / n;
         ctx.save();
         ctx.beginPath();
         if (roulette) {
@@ -1659,14 +1777,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ctx.closePath();
         }
         glowStroke("#ffedb9", 5, s.reduced ? 0 : 18);
+        ctx.restore();
       }
       ctx.restore();
       const count = roulette ? 30 : 48;
       for (let i = 0; i < count; i++) {
-        const a = i * TAU2 / count, light = s.reduced ? i % 3 === 0 : (Math.floor(t / 120) + i) % 7 < 3;
-        ctx.shadowBlur = light ? 9 : 0;
+        const a = i * TAU2 / count, light = s.reduced ? 0.65 : 0.5 + 0.5 * Math.sin(a * 3 - t / 650);
+        ctx.shadowBlur = 2 + light * 6;
         ctx.shadowColor = "#ffeab5";
-        circle(Math.cos(a) * 329, Math.sin(a) * 329, roulette ? 3.5 : 3.1, light ? P.cream : P.pink);
+        circle(Math.cos(a) * 329, Math.sin(a) * 329, roulette ? 3.5 : 3.1, tint(P.pink, 0.2 + light * 0.8));
       }
       ctx.shadowBlur = 0;
       if (s.scene === "gumball") {
@@ -1691,8 +1810,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.restore();
       ctx.save();
       ctx.translate(CX, CY - 337);
-      const kick = s.reduced ? 0 : Math.max(0, 1 - (t - (s.tickAt || 0)) / 140);
-      ctx.rotate(kick * -0.23);
+      if (s.tickAt && pointerTicks.at(-1) !== s.tickAt) pointerTicks.push(s.tickAt);
+      pointerTicks = pointerTicks.filter((at) => t - at >= 0 && t - at < 500).slice(-16);
+      const kick = s.reduced ? 0 : pointerTicks.reduce((sum2, at) => {
+        const age = t - at;
+        return sum2 + Math.sin(age / 50) * Math.exp(-age / 100);
+      }, 0);
+      ctx.rotate(Math.max(-0.25, Math.min(0.12, -kick * 0.11)));
       ctx.shadowColor = "#e9b1da99";
       ctx.shadowBlur = 17;
       ctx.beginPath();
@@ -1759,7 +1883,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         const a = i * 2.39996 + (e.seed || 0), v = 80 + i * 37 % 230, delay = i % 6 * 0.025, p = clamp2((age - delay) / (1 - delay)), fade = 1 - p;
         const x = 500 + Math.cos(a) * v * p * (e.kind === "final" ? 2 : 1.3), y = (e.kind === "final" ? 380 : 360) + Math.sin(a) * v * p + 300 * p * p;
         ctx.save();
-        ctx.globalAlpha = fade;
+        ctx.globalAlpha = fade * smooth(p / 0.05);
         if (i % 5 === 0) icon(e.kind === "exit" ? "star" : "coin", x, y, 18 + i % 3 * 5, a + p * 3);
         else {
           ctx.translate(x, y);
@@ -1771,7 +1895,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
     }
     function popPanel(title, main, sub, t, at, accent = P.gold) {
-      const x = clamp2((t - at) / 320), scale = reduceMotion ? 1 : 0.9 + 0.1 * ease2(x);
+      const x = clamp2((t - at) / 320), scale = reduceMotion ? 1 : 0.9 + 0.1 * ease(x);
       ctx.save();
       ctx.translate(500, 552);
       ctx.scale(scale, scale);
@@ -1783,10 +1907,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ctx.shadowOffsetY = 0;
       panel(-240, -80, 480, 165, "#3f254b", "#d394be77", 12);
       text(title, 0, -51, 15, "#e4bfdc", 900);
-      let size = 58;
-      while (main.length * size * 0.56 > 450) size -= 2;
+      const size = fit(main, 58, 450);
       text(main, 0, 1, size, accent, 1e3);
-      text(sub, 0, 57, 17, P.cream, 800);
+      text(sub, 0, 57, fit(sub, 18, 454), P.cream, 800);
       ctx.restore();
     }
     function hud(s, t) {
@@ -1795,10 +1918,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (isExtra(r.mode)) {
         const [label, value] = extraStatus(r);
         panel(234, 797, 532, 78, "#3c254aee", EXTRA_MODES[r.mode].colors[2], 12);
-        text(r.phase === "complete" ? "ROUND COMPLETE" : r.spins === null ? "KEEP SPINNING" : r.spins + " SPIN" + (r.spins === 1 ? "" : "S") + " LEFT", 361, 821, 15, P.cream);
+        text(r.phase === "complete" ? s.overlay && s.overlay.kind !== "final" ? "FINAL REVEAL" : "ROUND COMPLETE" : r.spins === null ? "KEEP SPINNING" : r.spins + " SPIN" + (r.spins === 1 ? "" : "S") + " LEFT", 361, 821, 15, P.cream);
         text(EXTRA_MODES[r.mode].name, 361, 849, 17, P.gold);
         text(label, 637, 819, 13, P.cream);
+        ctx.save();
+        if (s.overlay?.kind === "arcade") {
+          const reveal = sceneTiming(r.mode, s.overlay.entry).reveal;
+          ctx.globalAlpha *= progress(t - s.overlay.at, reveal - 160, reveal + 80, s.reduced);
+        }
         text(value, 637, 848, fit(value, 29, 230), P.gold);
+        ctx.restore();
         return;
       }
       if (r.mode === "rent") {
@@ -1812,15 +1941,23 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return;
       }
       if (r.mode === "gumball") {
-        const preview = ["candy", "match"].includes(s.overlay?.kind) ? r.last.candies : r.candies;
+        const dropping = s.overlay?.kind === "candy", matching = s.overlay?.kind === "match", age = s.overlay ? t - s.overlay.at : 0;
+        const preview = dropping || matching ? [...r.last.candies] : r.candies;
+        if (dropping && age < 1200 && !s.reduced) preview[r.last.color]--;
         for (let i = 0; i < 3; i++) {
           const x = 310 + i * 190;
           panel(x - 88, 777, 176, 90, "#3c254aee", SWEETS[i].color, 9);
           text(SWEETS[i].name + " TRIO", x, 794, 12, SWEETS[i].color);
           for (let j = 0; j < 3; j++) {
             const bx = x - 38 + j * 38;
-            if (j < preview[i]) candy(bx, 824, 13, i);
-            else circle(bx, 824, 13, "#24172f", "#86658e", 2);
+            if (j < preview[i]) {
+              const fade = matching && i === r.last.color ? 1 - progress(age, 1650, 2100, s.reduced) : 1;
+              if (matching && i === r.last.color) circle(bx, 824, 13, "#24172f", "#86658e", 2);
+              ctx.save();
+              ctx.globalAlpha *= fade;
+              candy(bx, 824, 13, i);
+              ctx.restore();
+            } else circle(bx, 824, 13, "#24172f", "#86658e", 2);
           }
           text("SET +$" + r.prices.cash * SWEETS[i].factor, x, 851, 13, P.gold);
         }
@@ -1844,7 +1981,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (!o) return;
       if (o.kind === "intro") {
         dimWheel(0.64);
-        const age = (t - o.at) / 1e3, k = s.reduced ? 1 : ease2(clamp2(age * 2));
+        const age = (t - o.at) / 1e3, k = s.reduced ? 1 : ease(clamp2(age * 2));
         ctx.save();
         ctx.translate(500, 427);
         ctx.scale(k, k);
@@ -1860,14 +1997,20 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       if (o.kind === "die") {
         dimWheel(0.66);
         text("DICE BOOST", 500, 260, 34, P.cream, 1e3, true);
-        const age = t - o.at, rolling = age < o.rollTime, value = rolling ? 1 + Math.floor(age / 90) % 6 : o.value;
-        const a = s.reduced ? 0 : rolling ? Math.sin(age / 100) * 0.25 : Math.sin(Math.min((age - o.rollTime) / 350, 1) * Math.PI) * 0.05;
-        dice(500, 421, 160, value, a);
+        const age = t - o.at, rolling = age < o.rollTime;
+        const settle = 1 - progress(age, o.rollTime - 450, o.rollTime, s.reduced);
+        const value = !s.reduced && age < o.rollTime - 220 ? 1 + Math.floor(12 * (1 - (1 - clamp2(age / o.rollTime)) ** 2)) % 6 : o.value;
+        const a = s.reduced ? 0 : Math.sin(age / 100) * 0.22 * settle;
+        dice(500, 421 - (s.reduced ? 0 : Math.abs(Math.sin(age / 130)) * 12 * settle), 160, value, a);
         text(rolling ? "ROLLING\u2026" : "+" + o.value + " EXTRA SPINS", 500, 566, rolling ? 23 : 33, P.gold, 1e3, true);
         if (!rolling) text(o.start + " starting + " + o.value + " bonus = " + (o.start + o.value) + " spins", 500, 612, 19, P.cream, 800);
       }
       if (o.kind === "arcade") {
         const e = o.entry, def2 = EXTRA_MODES[s.round.mode];
+        const show = progress(t - o.at, sceneTiming(s.round.mode, e).reveal - 180, sceneTiming(s.round.mode, e).reveal + 120, s.reduced);
+        ctx.save();
+        ctx.globalAlpha *= show;
+        ctx.translate(0, (1 - show) * 18);
         panel(212, 646, 576, 139, "#32203fee", def2.colors[2], 13);
         text(e.headline, 500, 670, fit(e.headline, 26, 544), P.cream);
         text(e.amount ? "+$" + e.amount.toLocaleString("en-US") : "NO ADDED CHARGE", 500, 706, e.amount ? 42 : 24, P.gold);
@@ -1880,6 +2023,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           else rows[i] += (rows[i] ? " " : "") + word;
         }
         rows.slice(0, 2).forEach((row, i) => text(row, 500, 740 + i * 21, 15, P.cream, 800));
+        ctx.restore();
       }
       if (o.kind === "property") {
         const e = o.entry, age = clamp2((t - o.at) / 900);
@@ -1906,10 +2050,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         text("ADDED TO YOUR BILL", 500, 630, 12, P.cream);
       }
       if (o.kind === "candy") {
-        const e = o.entry, p = s.reduced ? 1 : ease2(clamp2((t - o.at) / 1200)), targetX = 310 + e.color * 190 - 38 + (e.candies[e.color] - 1) * 38;
-        const x = mix(500, targetX, p) + Math.sin(p * Math.PI) * 110, y = mix(230, 824, p) - Math.sin(p * Math.PI) * 70;
+        const e = o.entry, p = s.reduced ? 1 : ease(clamp2((t - o.at) / 1200)), targetX = 310 + e.color * 190 - 38 + (e.candies[e.color] - 1) * 38;
+        const x = mix2(500, targetX, p) + Math.sin(p * Math.PI) * 110, y = mix2(230, 824, p) - Math.sin(p * Math.PI) * 70;
         candy(x, y, 32 - 19 * p, e.color, s.reduced ? 0 : p * TAU2);
-        if (p > 0.8) popPanel("CANDY DISPENSED", "+$" + e.base, SWEETS[e.color].name + " collection: " + e.candies[e.color] + " / 3", t, o.at, SWEETS[e.color].color);
+        if (p > 0.8) popPanel("CANDY DISPENSED", "+$" + e.base, SWEETS[e.color].name + " collection: " + e.candies[e.color] + " / 3", t, o.at + 760, SWEETS[e.color].color);
       }
       if (o.kind === "match") {
         dimWheel(0.55);
@@ -1945,21 +2089,21 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
       if (o.kind === "final") {
         dimWheel(0.6);
-        const k = s.reduced ? 1 : 0.94 + 0.06 * ease2(clamp2((t - o.at) / 550));
+        const k = s.reduced ? 1 : 0.94 + 0.06 * ease(clamp2((t - o.at) / 550));
         ctx.save();
         ctx.translate(500, 439);
         ctx.scale(k, k);
         panel(-290, -171, 580, 342, "#8a4f82", "#ffe2be", 17);
         panel(-279, -160, 558, 320, "#37223f", "#e9b5d8", 12);
         for (let i = 0; i < 16; i++) {
-          const lit = s.reduced ? true : (Math.floor(t / 180) + i) % 3 !== 0;
-          ctx.fillStyle = lit ? "#ffdda0" : "#b979a8";
+          const lit = s.reduced ? 1 : 0.5 + 0.5 * Math.sin(t / 420 + i * 0.7);
+          ctx.fillStyle = tint("#b979a8", lit * 0.65);
           ctx.fillRect(-261 + i * 34, -166, 19, 7);
           ctx.fillRect(-261 + i * 34, 159, 19, 7);
         }
         icon("crown", 0, -151, 68);
         text("YOU\u2019VE BEEN SCAMMED", 0, -97, 24, "#f6cee8");
-        const amount = "$" + s.round.total.toLocaleString("en-US"), size = Math.min(97, 450 / (amount.length * 0.6));
+        const amount = "$" + s.round.total.toLocaleString("en-US"), size = fit(amount, 97, 490);
         text(amount, 0, -14, size, P.gold);
         text({ dice: "Those extra spins added up.", roulette: "The exit comes with a bill.", rent: "Free to visit. Expensive to stay.", gumball: "A sweet tooth. A very sour bill." }[s.round.mode] || "Cute game. Quite a bill.", 0, 64, 21, P.cream, 800);
         text(o.detail, 0, 108, 16, "#d4b7e1", 800);
@@ -1981,7 +2125,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         icon("heart", 500, 70, 29);
       }
       decor(s, t, roulette);
-      const trans = s.transformAt ? ease2(clamp2((t - s.transformAt) / 850)) : 1;
+      const trans = s.transformAt ? ease(clamp2((t - s.transformAt) / 850)) : 1;
       if (!s.reduced && trans < 1) {
         ctx.save();
         ctx.translate(CX, CY);
@@ -1994,11 +2138,26 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         ctx.stroke();
         ctx.restore();
       }
-      disc(s, t, roulette, 1, s.reduced ? 1 : 0.97 + 0.03 * trans);
+      if (s.previousScene && trans < 1 && !s.reduced) {
+        Object.assign(P, s.previousScene.theme || THEME);
+        disc(s.previousScene, t, false, 1 - trans, 1 - trans * 0.04);
+        Object.assign(P, THEME);
+      }
+      ctx.save();
+      ctx.globalAlpha *= s.reduced ? 1 : trans;
+      ctx.translate(CX, CY);
+      const sceneScale = s.reduced ? 1 : 0.94 + 0.06 * trans;
+      ctx.scale(sceneScale, sceneScale);
+      ctx.translate(-CX, -CY);
+      disc(s, t, roulette);
       if (isExtra(s.scene)) drawScene(ctx, s, t);
+      ctx.restore();
       hud(s, t);
-      overlay(s, t);
       particles(s, t);
+      ctx.save();
+      ctx.globalAlpha *= overlayOpacity(s.overlay, t, s.reduced);
+      overlay(s, t);
+      ctx.restore();
       if (s.round.scripted) {
         panel(374, 18, 252, 38, "#3c254aee", P.gold, 8);
         text("SCRIPTED SHOWCASE", 500, 37, 16, P.gold);
@@ -2159,7 +2318,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     const round = createRound(mode === "surprise" ? "dice" : mode, prices, $("quick").checked, scripted);
     round.mystery = mode === "surprise";
     round.revealed = false;
-    return { round, items: board({ ...round, phase: "normal" }), scene: "normal", rotation: 0, motion: null, selected: null, overlay: null, effect: null, busy: false, reduced, theme: { ...config.theme }, transformAt: 0, hudAt: 0, tickAt: 0, waiting: viewer, status: "", error: null };
+    return { round, items: board({ ...round, phase: "normal" }), scene: "normal", rotation: 0, motion: null, selected: null, selection: null, overlay: null, effect: null, busy: false, reduced, theme: { ...config.theme }, transformAt: 0, previousScene: null, hudAt: 0, tickAt: 0, waiting: viewer, status: "", error: null };
   }
   var state = initial();
   function tone(freq, len = 0.09, type = "triangle", volume = 0.025, delay = 0) {
@@ -2177,6 +2336,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       g.connect(audio.destination);
       o.start(t);
       o.stop(t + len + 0.02);
+      o.onended = () => {
+        o.disconnect();
+        g.disconnect();
+      };
     }, delay);
   }
   function soundFor(kind) {
@@ -2325,6 +2488,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     } catch {
     }
     epoch++;
+    reviewFrames = [];
     auto = false;
     state = initial(mode, scripted);
     lastSector = -1;
@@ -2335,12 +2499,19 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   function wait(n, token) {
     return new Promise((resolve, reject) => setTimeout(() => token === epoch ? resolve() : reject(new Error("cancelled")), n));
   }
+  async function dismissOverlay(token) {
+    if (!state.overlay) return;
+    state.overlay = { ...state.overlay, exitAt: motionClock() };
+    publish();
+    await wait(reduced ? 80 : 240, token);
+    state.overlay = null;
+  }
   function popup(title, main, sub, accent) {
-    state.overlay = { kind: "popup", title, main, sub, accent, at: Date.now() };
+    state.overlay = { kind: "popup", title, main, sub, accent, at: motionClock() };
     ui();
   }
   function burst(kind) {
-    state.effect = { kind, at: Date.now(), seed: state.round.ledger.length };
+    state.effect = { kind, at: motionClock(), seed: state.round.ledger.length };
     publish();
   }
   async function activateScam(token) {
@@ -2348,25 +2519,28 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       state.round = { ...state.round, mode: nextMystery(), revealed: true };
     }
     const mode = state.round.mode;
-    state.overlay = { kind: "intro", name: MODES[mode].name, at: Date.now() };
+    state.overlay = { kind: "intro", name: MODES[mode].name, at: motionClock() };
     state.status = "Scam activated.";
     soundFor("intro");
     ui();
-    await wait(1750, token);
+    await wait(1500, token);
+    await dismissOverlay(token);
+    state.previousScene = { ...state, motion: null, overlay: null, effect: null, previousScene: null };
     state.scene = mode;
     state.items = board({ ...state.round, ...isExtra(mode) ? startExtra(state.round) : {}, phase: "active" });
-    state.transformAt = Date.now();
+    state.transformAt = motionClock();
     state.rotation = 0;
     state.selected = null;
+    state.selection = null;
     if (mode === "dice") {
       const die = state.round.scripted ? 2 : 1 + Math.floor(random() * 6), rollTime = ms(1450);
-      state.overlay = { kind: "die", value: die, start: state.round.prices.spins, rollTime, at: Date.now() };
+      state.overlay = { kind: "die", value: die, start: state.round.prices.spins, rollTime, at: motionClock() };
       state.status = "Rolling the bonus die\u2026";
       ui();
       if (!reduced) for (let i = 0; i < 10; i++) tone(250 + i % 4 * 95, 0.05, "square", 0.011, i * 140);
       await wait(1450, token);
       state.round = activate(state.round, die);
-      state.hudAt = Date.now();
+      state.hudAt = motionClock();
       burst("bonus");
       soundFor("bonus");
       ui();
@@ -2379,7 +2553,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ui();
       await wait(1050, token);
     }
-    state.overlay = null;
+    await dismissOverlay(token);
     ui();
   }
   async function runStep() {
@@ -2389,6 +2563,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     state.error = null;
     state.overlay = null;
     state.effect = null;
+    if (state.selection) state.selection = { ...state.selection, exitAt: motionClock() };
     state.selected = null;
     state.status = "Here we go\u2026";
     ui();
@@ -2403,49 +2578,55 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       const landing = resolveLanding(layout, rest, { magnetism: false, seamBandDeg: 0 });
       if (landing.kind !== "winner" || landing.slice !== index) throw new Error("Landing does not match the slice");
       const target = nextRotation(state.rotation, landing.restAngle, spinTurns(0.3));
-      state.motion = { from: state.rotation, to: target, at: Date.now(), duration: ms(5600) };
+      state.motion = { from: state.rotation, to: target, at: motionClock(), duration: ms(5600) };
       state.status = r.phase === "normal" ? "Opening spin " + (r.normal + 1) + "\u2026" : r.mode === "dice" ? "Watch the next cash boost\u2026" : r.mode === "rent" ? "Where are we building?" : r.mode === "gumball" ? "Which sweet joins the collection?" : isExtra(r.mode) ? MODES[r.mode].short : "Cash, multiplier\u2026 or EXIT?";
       ui();
       await wait(ms(5600), token);
       state.rotation = target;
       state.motion = null;
       state.selected = index;
+      state.selection = { index, at: motionClock() };
       const actual = sliceAtAngle(layout, ((90 - target) % 360 + 360) % 360);
       canvas.dataset.landed = String(index);
       canvas.dataset.pointer = String(actual);
       canvas.dataset.rotation = String(target);
       if (actual !== index) throw new Error("Pointer did not reach the result");
       state.round = land(r, index, random);
+      state.settledAt = motionClock();
       const e = state.round.last;
-      state.hudAt = Date.now();
+      state.hudAt = motionClock();
       if (e.kind === "arcade") {
         state.items = board(state.round);
-        state.overlay = { kind: "arcade", entry: e, at: Date.now() };
+        state.overlay = { kind: "arcade", entry: e, at: motionClock() };
         state.status = e.headline + " " + e.detail;
+        ui();
+        const timing = sceneTiming(r.mode, e);
+        await wait(timing.reveal, token);
         soundFor(e.amount > r.prices.cash * 3 ? "bonus" : "cash");
         burst(e.amount > r.prices.cash * 3 ? "bonus" : "cash");
-        ui();
-        await wait(2900, token);
+        await wait(timing.duration - timing.reveal, token);
       } else if (e.kind === "rent") {
         state.items = board(state.round);
         soundFor("bonus");
         burst("bonus");
-        state.overlay = { kind: "property", entry: e, at: Date.now() };
+        state.overlay = { kind: "property", entry: e, at: motionClock() };
         state.status = e.name + " " + (e.level === 1 ? "built" : "upgraded") + ". Now collecting the whole street.";
         ui();
         await wait(1400, token);
-        state.overlay = { kind: "rent", entry: e, at: Date.now() };
+        await dismissOverlay(token);
+        state.overlay = { kind: "rent", entry: e, at: motionClock() };
         soundFor("cash");
         ui();
         await wait(2700, token);
       } else if (e.kind === "candy") {
-        state.overlay = { kind: "candy", entry: e, at: Date.now() };
+        state.overlay = { kind: "candy", entry: e, at: motionClock() };
         soundFor("cash");
         state.status = SWEETS[e.color].name + " candy: +" + money(e.base) + ".";
         ui();
         await wait(1600, token);
         if (e.matched) {
-          state.overlay = { kind: "match", entry: e, at: Date.now() };
+          await dismissOverlay(token);
+          state.overlay = { kind: "match", entry: e, at: motionClock() };
           burst("final");
           soundFor("final");
           state.status = "Three " + SWEETS[e.color].name.toLowerCase() + " candies! Set bonus +" + money(e.setBonus) + ".";
@@ -2462,11 +2643,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       } else if (e.kind === "exit") {
         soundFor("exit");
         burst("exit");
-        state.overlay = { kind: "exit", at: Date.now() };
+        state.overlay = { kind: "exit", at: motionClock() };
         state.status = "EXIT! Time to settle the bill.";
         ui();
         await wait(1700, token);
-        state.overlay = { kind: "math", before: e.before, after: e.after, mult: r.mult, at: Date.now() };
+        await dismissOverlay(token);
+        state.overlay = { kind: "math", before: e.before, after: e.after, mult: r.mult, at: motionClock() };
         soundFor("boost");
         burst("final");
         ui();
@@ -2480,8 +2662,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         ui();
         await wait(e.mult > 1 ? 1800 : 1350, token);
       }
+      await dismissOverlay(token);
       if (state.round.phase === "complete") {
-        state.overlay = { kind: "final", detail: state.round.reason === "limit" ? "Round limit reached - charges settled" : isExtra(state.round.mode) ? state.round.step + " spins - every charge shown in round history" : state.round.mode === "rent" ? state.round.step + " spins - rent charged after every build" : state.round.mode === "gumball" ? state.round.step + " candies + " + state.round.sets + " set bonuses" : state.round.mode === "dice" ? state.round.ledger.length + " landings \xB7 every cash hit counted" : money(e.before) + " \xD7 " + r.mult + " = " + money(state.round.total), at: Date.now() };
+        state.overlay = { kind: "final", detail: state.round.reason === "limit" ? "Round limit reached - charges settled" : isExtra(state.round.mode) ? state.round.step + " spins - every charge shown in round history" : state.round.mode === "rent" ? state.round.step + " spins - rent charged after every build" : state.round.mode === "gumball" ? state.round.step + " candies + " + state.round.sets + " set bonuses" : state.round.mode === "dice" ? state.round.ledger.length + " landings \xB7 every cash hit counted" : money(e.before) + " \xD7 " + r.mult + " = " + money(state.round.total), at: motionClock() };
         burst("final");
         soundFor("final");
       } else state.overlay = null;
@@ -2639,28 +2822,44 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       runStep();
     }
   });
-  var frames = 0;
-  var frameStart = Date.now();
+  var frameStart = motionClock();
+  var previousFrame = null;
+  var samples = [];
+  var drawSamples = [];
+  var reviewFrames = [];
+  var percentile = (values, p) => values.length ? [...values].sort((a, b) => a - b)[Math.min(values.length - 1, Math.floor(values.length * p))] : 0;
   function frame() {
-    const t = Date.now();
-    frames++;
-    if (t - frameStart >= 1e3) {
-      canvas.dataset.fps = String(Math.round(frames * 1e3 / (t - frameStart)));
-      frames = 0;
-      frameStart = t;
+    const start = performance.now(), t = motionClock();
+    if (!document.hidden && previousFrame !== null) {
+      const delta = start - previousFrame;
+      samples.push(delta);
+      if (state.busy) reviewFrames.push(delta);
     }
+    previousFrame = document.hidden ? null : start;
     if (state.motion) {
       const angle = rotationAt(state, t), sector = Math.floor(((90 - angle) % 360 + 360) % 360 / (360 / state.items.length));
       if (sector !== lastSector) {
         lastSector = sector;
         state.tickAt = t;
-        if (!reduced && t - lastTick > 50) {
+        if (!reduced && t - lastTick > 65) {
           tone(650 + sector % 4 * 40, 0.025, "triangle", 0.013);
           lastTick = t;
         }
       }
     }
     renderer.draw(state, t);
+    if (!document.hidden) drawSamples.push(performance.now() - start);
+    if (t - frameStart >= 1e3) {
+      canvas.dataset.fps = String(Math.round(samples.length * 1e3 / Math.max(1, samples.reduce((a, b) => a + b, 0))));
+      canvas.dataset.frameP95 = percentile(samples, 0.95).toFixed(2);
+      canvas.dataset.drawP95 = percentile(drawSamples, 0.95).toFixed(2);
+      canvas.dataset.roundFrameP95 = percentile(reviewFrames, 0.95).toFixed(2);
+      canvas.dataset.roundFrames = String(reviewFrames.length);
+      canvas.dataset.longFrames = String(reviewFrames.filter((n) => n > 50).length);
+      samples = [];
+      drawSamples = [];
+      frameStart = t;
+    }
     requestAnimationFrame(frame);
   }
   document.fonts.ready.then(() => {

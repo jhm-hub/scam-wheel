@@ -42,3 +42,21 @@
 
 #ledger small{display:block;font-size:11px;font-weight:600;line-height:1.4;color:#bca6c7;margin-top:4px}
 @media(max-width:680px){.stage{position:sticky;top:0;z-index:2;background:#21142f;border-radius:0}.viewer .stage{background:none;position:relative;z-index:auto}}
+
+/* A taller wheel keeps the scene readable in a narrow browser pane. */
+@media(max-width:680px){
+ .stage canvas{width:100%;height:auto;max-height:62vh;object-fit:contain}
+ .stage{background:linear-gradient(#21142f,#1a1028);border-bottom:1px solid #c999c022}
+ .selection .library{display:block}.library .modes{max-height:190px}
+ .viewer .stage{background:none;border:0}.viewer .stage canvas{max-height:none}
+}
+button{transition:filter 160ms ease,background-color 160ms ease,box-shadow 160ms ease,transform 120ms ease}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #ffe2ae;outline-offset:4px}
+button:not(:disabled):active{transform:translateY(1px)}
+
+@media(max-width:680px){
+ .stage{overflow:hidden}
+ .stage canvas{width:min(132%,67.39vh);height:auto;max-width:none;max-height:none;position:relative;left:50%;transform:translateX(-50%);margin:0}
+ .viewer .stage{overflow:visible}
+ .viewer .stage canvas{width:100%;left:auto;transform:none;position:static}
+}

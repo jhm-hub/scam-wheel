@@ -49,10 +49,19 @@ All equal-size wheel slots are equally likely on random spins. Plinko's subseque
 
 From the repository root, the normal install, test and build commands include this collection. `node scripts/build-arcade.mjs` rebuilds only the playable page. The generated page embeds its JS, CSS and font and requires no runtime downloads. `node scripts/build-arcade.mjs --engine && node --test arcade/checks/game.mjs` runs the collection's tests.
 
-Checks cover all showcase totals, 3,000 random rounds across all 20 games at ordinary/extreme settings, 2,000 additional rounds for the first four, exact ledger accounting, configuration validation, individual rule boundaries, mystery-deck coverage and every 4/6/8/9/12-slot pointer geometry. All 33 collection checks pass. Browser review separately completed all 20 showcases and checked profile/theme persistence, reset cancellation, pause and transparent-view synchronization. Synthesized audio is included; direct listening has not been verified.
+Checks cover all showcase totals, 3,000 random rounds across all 20 games at ordinary/extreme settings, 2,000 additional rounds for the first four, exact ledger accounting, configuration validation, individual rule boundaries, mystery-deck coverage and every 4/6/8/9/12-slot pointer geometry. The collection has 35 model and motion checks. Browser review separately completed all 20 showcases and checked profile/theme persistence, reset cancellation, pause and transparent-view synchronization. Synthesized audio is included; direct listening has not been verified.
 
 ## Inspiration and originality comparison
 
 Dice Boost and Russian Roulette intentionally follow the mechanics observed in the user-provided Lexiful recording: https://kick.com/lexiful/videos/01a1faf6-cde8-7df0-ae7a-db1f4e94a0d1. The user reported permission to borrow those games and style. No footage, logos or character sprites are included.
 
 The other 18 game designs were compared against the supplied 25-mode Kay wheel catalog. That catalog contains price replacements, enlarged slices, extra spins, multiple pointers/wheels, forced magnets, fixed digit bait, neighbouring awards, timed spins, shields, mystery picks and key escape. These new designs use different persistent state, triggers and settlement rules, beyond renamed or recoloured versions. Kay's game also named Russian Roulette is a different high/low cash wheel. This comparison is not a claim of worldwide originality.
+
+
+## Motion review
+
+The wheel uses a continuous wind-up/launch curve and the original landing math. Scene actions finish before the bill card arrives, with eased entrances and exits. The 16 scene games stage their individual movements; die settling, candy delivery and intermediate roulette/rent cards also use smooth handoffs. A monotonic clock with a shared epoch keeps the companion view aligned.
+
+`node scripts/review-arcade.mjs <output-folder>` generates a local visual-review page using the production renderer and model. It can replay or inspect individual moments, switch to maximum settings or reduced motion, and compare the last animated scene against its resting scene. It is not included in the published site. Frame timing reports measure the current browser; they are not a guarantee for every device.
+
+The November 24 motion pass reviewed all 20 games, checked 389 scene-to-rest joins across default/maximum/reduced settings, and inspected large amounts and a 390px layout. Full browser rounds covered Dice Boost, Russian Roulette, Rent Free, Gumball Ransom and Plinko Princess. On the review Mac these rounds ran around 60 fps with no recorded frames over 50ms. One initial review-page transformation stalled while another browser tab was opening; its repeat is recorded separately. Audio timing follows the visual reveal; no direct listening approval is claimed.
