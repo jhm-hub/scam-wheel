@@ -38,6 +38,10 @@ function makeRenderer(canvas) {
     const n = parseInt(hex.slice(1), 16);
     return "#" + [n >> 16 & 255, n >> 8 & 255, n & 255].map((v) => Math.round(v + (255 - v) * amount).toString(16).padStart(2, "0")).join("");
   }
+  function blendColor(from, to, amount) {
+    const a = parseInt(from.slice(1), 16), b = parseInt(to.slice(1), 16);
+    return "#" + [16, 8, 0].map(shift => Math.round(mix(a >> shift & 255, b >> shift & 255, amount)).toString(16).padStart(2, "0")).join("");
+  }
   function circle(x, y, r, fill, stroke, w = 2) {
     ctx.beginPath();
     ctx.arc(x, y, r, 0, TAU);
@@ -329,12 +333,10 @@ function makeRenderer(canvas) {
     ctx.stroke();
     ctx.shadowBlur = 0;
   }
-  function disc(s, t, roulette, alpha = 1, scale = 1) {
+  function disc(s, t, roulette) {
     const image = wheelCache(s, roulette), angle = rotationAt(s, t);
     ctx.save();
-    ctx.globalAlpha *= alpha;
     ctx.translate(CX, CY);
-    ctx.scale(scale, scale);
     ctx.shadowColor = "#130b2188";
     ctx.shadowBlur = 25;
     ctx.shadowOffsetY = 12;
@@ -406,8 +408,11 @@ function makeRenderer(canvas) {
       text("WHEEL", 0, 17, 25, P.cream, 1e3, true);
     }
     ctx.restore();
+  }
+  function pointer(s, t, roulette, transition = 1) {
     ctx.save();
     ctx.translate(CX, CY - 337);
+    if (!s.tickAt) pointerTicks = [];
     if (s.tickAt && pointerTicks.at(-1) !== s.tickAt) pointerTicks.push(s.tickAt);
     pointerTicks = pointerTicks.filter(at => t-at >= 0 && t-at < 500).slice(-16);
     const kick = s.reduced ? 0 : pointerTicks.reduce((sum,at) => {const age=t-at;return sum + Math.sin(age/50)*Math.exp(-age/100);},0);
@@ -434,7 +439,9 @@ function makeRenderer(canvas) {
     ctx.lineTo(0, 34);
     ctx.lineTo(-20, 1);
     ctx.closePath();
-    ctx.fillStyle = roulette ? P.pink : P.lilac;
+    const color = roulette ? P.pink : P.lilac, previous = s.previousScene;
+    const previousColors = previous?.scene === "normal" ? previous.theme || THEME : THEME;
+    ctx.fillStyle = previous && transition < 1 ? blendColor(previous.scene === "roulette" ? previousColors.pink : previousColors.lilac, color, transition) : color;
     ctx.fill();
     ctx.restore();
   }
@@ -571,17 +578,30 @@ function makeRenderer(canvas) {
     if (!o) return;
     if (o.kind === "intro") {
       dimWheel(0.64);
-      const age = (t - o.at) / 1e3, k = s.reduced ? 1 : ease(clamp(age * 2));
+      const age = t - o.at, enter = progress(age, 0, 440, s.reduced);
+      const titleIn = progress(age, 130, 390, s.reduced), nameIn = progress(age, 330, 620, s.reduced);
+      const k = 0.92 + 0.08 * enter + (s.reduced ? 0 : Math.sin(enter * Math.PI) * 0.012);
       ctx.save();
-      ctx.translate(500, 427);
+      ctx.translate(500, 427 + (1 - enter) * 22);
       ctx.scale(k, k);
       icon("star", -251, -108, 53, -0.2);
       icon("heart", 252, 108, 41, 0.2);
       panel(-282, -91, 564, 182, "#a65c94", "#fff1d6", 16);
       panel(-271, -80, 542, 160, "#62345d", "#e5b8e9", 10);
       text("UH OH\u2026", 0, -48, 17, "#f6d3ea", 900);
-      text("SCAM ACTIVATED", 0, 0, 43, P.cream, 1e3, true);
-      text(o.name, 0, 50, 23, P.gold);
+      ctx.save();ctx.globalAlpha *= titleIn;
+      text("SCAM ACTIVATED", 0, (1 - titleIn) * 12, 43, P.cream, 1e3, true);
+      ctx.restore();
+      ctx.save();ctx.globalAlpha *= nameIn;
+      text(o.name, 0, 50 + (1 - nameIn) * 9, 23, P.gold);
+      ctx.restore();
+      if (!s.reduced) {
+        const drift = progress(age, 220, 920), sparkle = progress(age, 220, 420) * (1 - progress(age, 620, 1080));
+        for (let i = 0; i < 6; i++) {
+          const side = i % 2 ? 1 : -1, y = (Math.floor(i / 2) - 1) * 80;
+          icon("sparkle", side * (296 + drift * 25), y - drift * 16, 10 + i % 3 * 4, 0, sparkle * 0.8);
+        }
+      }
       ctx.restore();
     }
     if (o.kind === "die") {
@@ -624,26 +644,31 @@ function makeRenderer(canvas) {
     }
     if (o.kind === "rent") {
       const e = o.entry, entries = e.rents.map((v, i) => ({ value: v, name: STREETS[i] })).filter((v) => v.value), elapsed = t - o.at;
-      const shown = s.reduced ? entries.length : Math.min(entries.length, Math.floor(elapsed / 330) + 1);
-      const subtotal = entries.slice(0, shown).reduce((a, b) => a + b.value, 0);
+      const arrivals = entries.map((_, i) => progress(elapsed, 120 + i * 280, 360 + i * 280, s.reduced));
+      const subtotal = Math.round(entries.reduce((sum, entry, i) => sum + entry.value * arrivals[i], 0));
       panel(300, 300, 400, 345, "#3c254bf2", "#ffe4c2", 15);
       text("RENT DAY", 500, 329, 27, P.gold);
       text("Every built property charges again", 500, 360, 16, P.cream, 800);
       for (let i = 0; i < entries.length; i++) {
-        const y = 389 + i * 27;
-        ctx.globalAlpha = i < shown ? 1 : 0.25;
+        const y = 389 + i * 27 + (1 - arrivals[i]) * 5;
+        ctx.save();
+        ctx.globalAlpha *= 0.2 + arrivals[i] * 0.8;
         text(entries[i].name, 411, y, 15, P.cream);
         text("+$" + entries[i].value, 589, y, 18, P.gold);
-        ctx.globalAlpha = 1;
+        ctx.restore();
       }
       text("+$" + subtotal, 500, 597, 48, P.gold);
       text("ADDED TO YOUR BILL", 500, 630, 12, P.cream);
     }
     if (o.kind === "candy") {
-      const e = o.entry, p = s.reduced ? 1 : ease(clamp((t - o.at) / 1200)), targetX = 310 + e.color * 190 - 38 + (e.candies[e.color] - 1) * 38;
+      const e = o.entry, age = t - o.at, p = s.reduced ? 1 : ease(clamp(age / 1200)), targetX = 310 + e.color * 190 - 38 + (e.candies[e.color] - 1) * 38;
       const x = mix(500, targetX, p) + Math.sin(p * Math.PI) * 110, y = mix(230, 824, p) - Math.sin(p * Math.PI) * 70;
-      candy(x, y, 32 - 19 * p, e.color, s.reduced ? 0 : p * TAU);
-      if (p > 0.8) popPanel("CANDY DISPENSED", "+$" + e.base, SWEETS[e.color].name + " collection: " + e.candies[e.color] + " / 3", t, o.at + 760, SWEETS[e.color].color);
+      if (!s.reduced && age < 1200) candy(x, y, 32 - 19 * p, e.color, p * TAU);
+      const receipt = progress(age, 1040, 1280, s.reduced);
+      ctx.save();ctx.globalAlpha *= receipt;
+      ctx.translate(0, (1 - receipt) * 12);
+      popPanel("CANDY DISPENSED", "+$" + e.base, SWEETS[e.color].name + " collection: " + e.candies[e.color] + " / 3", t, o.at + 1040, SWEETS[e.color].color);
+      ctx.restore();
     }
     if (o.kind === "match") {
       dimWheel(0.55);
@@ -700,12 +725,13 @@ function makeRenderer(canvas) {
       ctx.restore();
     }
   }
-  function draw(s, t) {
+  function sceneLayer(s, t, alpha = 1, scale = 1) {
+    if (alpha <= 0) return;
     Object.assign(P, s.scene === "normal" ? s.theme || THEME : THEME);
-    reduceMotion = s.reduced;
-    ctx.setTransform(dpi, 0, 0, dpi, 0, 0);
-    ctx.clearRect(0, 0, 1e3, 980);
     const roulette = s.scene === "roulette";
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(CX, CY);ctx.scale(scale, scale);ctx.translate(-CX, -CY);
     if (s.scene === "gumball") {
       panel(293, 646, 414, 114, "#cb75a4", "#ffe4d6", 18);
       panel(315, 669, 370, 70, "#996598", "#f0c2e1", 12);
@@ -715,9 +741,20 @@ function makeRenderer(canvas) {
       icon("heart", 500, 70, 29);
     }
     decor(s, t, roulette);
-    const trans = s.transformAt ? ease(clamp((t - s.transformAt) / 850)) : 1;
+    disc(s, t, roulette);
+    if (isExtra(s.scene)) drawScene(ctx, s, t);
+    hud(s, t);
+    ctx.restore();
+  }
+  function draw(s, t) {
+    Object.assign(P, s.scene === "normal" ? s.theme || THEME : THEME);
+    reduceMotion = s.reduced;
+    ctx.setTransform(dpi, 0, 0, dpi, 0, 0);
+    ctx.clearRect(0, 0, 1e3, 980);
+    const roulette = s.scene === "roulette", trans = s.transformAt ? progress(t - s.transformAt, 0, 850, s.reduced) : 1;
     if (!s.reduced && trans < 1) {
       ctx.save();
+      ctx.globalAlpha *= Math.sin(trans * Math.PI) * 0.7;
       ctx.translate(CX, CY);
       ctx.rotate(trans * TAU);
       ctx.strokeStyle = "#ffe3bd";
@@ -729,19 +766,11 @@ function makeRenderer(canvas) {
       ctx.restore();
     }
     if (s.previousScene && trans < 1 && !s.reduced) {
-      Object.assign(P, s.previousScene.theme || THEME);
-      disc(s.previousScene, t, false, 1 - trans, 1 - trans * 0.04);
-      Object.assign(P, THEME);
+      sceneLayer(s.previousScene, t, 1 - trans, 1 - trans * 0.025);
     }
-    ctx.save();
-    ctx.globalAlpha *= s.reduced ? 1 : trans;
-    ctx.translate(CX,CY);
-    const sceneScale = s.reduced ? 1 : 0.94 + 0.06 * trans;
-    ctx.scale(sceneScale,sceneScale);ctx.translate(-CX,-CY);
-    disc(s, t, roulette);
-    if (isExtra(s.scene)) drawScene(ctx, s, t);
-    ctx.restore();
-    hud(s, t);
+    sceneLayer(s, t, trans, 0.96 + 0.04 * trans);
+    Object.assign(P, s.scene === "normal" ? s.theme || THEME : THEME);
+    pointer(s, t, roulette, trans);
     particles(s, t);
     ctx.save();
     ctx.globalAlpha *= overlayOpacity(s.overlay,t,s.reduced);

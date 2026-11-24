@@ -20,14 +20,14 @@ function prepare(){
   const add=(kind,duration,extra={})=>moments.push({name:r.step+'. '+e.label+' / '+kind,duration,state:state(r,{kind,entry:e,at:0,...extra},i)});
   if(e.kind==='arcade')add('arcade',sceneTiming(mode,e).duration);
   else if(e.kind==='rent'){add('property',1400);add('rent',2700);}
-  else if(e.kind==='candy'){add('candy',1600);if(e.matched)add('match',2300);}
+  else if(e.kind==='candy'){add('candy',2200);if(e.matched)add('match',2300);}
   else if(e.kind==='exit'){add('exit',1700);add('math',2000,{before:e.before,after:e.after,mult:before.mult});}
   else add('popup',1800,{title:e.label,main:e.kind==='boost'||e.kind==='total'?'x'+r.mult:'+$'+e.amount,sub:e.kind==='boost'?'Next cash collects the boost':'Added to the bill'});
  }
  moments.push({name:'Final bill',duration:2000,state:state(r,{kind:'final',detail:'Scripted visual review',at:0})});
  $('moment').replaceChildren(...moments.map((m,i)=>new Option(m.name,String(i))));select(0);
 }
-function select(i){playing=false;index=i;elapsed=0;samples=[];draws=[];last=null;$('moment').value=String(i);$('time').max=String(moments[i].duration);$('status').textContent=moments[i].name;}
+function select(i){playing=false;index=i;elapsed=0;samples=[];draws=[];last=null;$('moment').value=String(i);$('time').max=String(moments[i].duration);$('time').value='0';$('status').textContent=moments[i].name;}
 function play(){samples=[];draws=[];last=null;elapsed=0;start=performance.now();playing=true;}
 $('mode').onchange=()=>{all=false;prepare();};$('large').onchange=()=>{all=false;prepare();};$('moment').onchange=()=>{all=false;select(Number($('moment').value));};
 $('time').oninput=()=>{playing=all=false;elapsed=Number($('time').value);};
@@ -45,6 +45,32 @@ $('joins').onclick=()=>{
   checks.push({moment:m.name,changedPixels:changed,box,sample});
  }
  $('metrics').textContent=JSON.stringify(checks,null,2);$('status').textContent='Scene joins checked';
+};
+$('fades').onclick=()=>{
+ playing=all=false;
+ const c=document.createElement('canvas');c.getContext('2d',{willReadFrequently:true});const test=makeRenderer(c),checks=[];
+ const pixels=()=>c.getContext('2d').getImageData(0,0,c.width,Math.floor(c.height*760/920)).data;
+ for(const m of moments.filter(v=>v.state.overlay)){
+  const t=m.duration+240,o={...m.state.overlay,exitAt:m.duration},s={...m.state,overlay:o,reduced:$('reduced').checked};
+  test.draw(s,t);pixels();test.draw(s,t);const before=pixels();
+  test.draw({...s,overlay:null},t);const after=pixels();
+  let changed=0,box=[c.width,c.height,0,0];for(let i=0;i<before.length;i+=4)if([0,1,2,3].some(k=>Math.abs(before[i+k]-after[i+k])>12)){changed++;const x=i/4%c.width,y=Math.floor(i/4/c.width);box=[Math.min(box[0],x),Math.min(box[1],y),Math.max(box[2],x),Math.max(box[3],y)];}
+  checks.push({moment:m.name,changedPixels:changed,box});
+ }
+ const transform=moments.find(v=>v.name==='Wheel transformation')?.state;
+ if(transform)for(const [name,t,expected] of [['Transformation start',1,transform.previousScene],['Transformation end',1100,{...transform,previousScene:null,transformAt:0}]]){
+  const s={...transform,reduced:false};test.draw(s,t);pixels();test.draw(s,t);const before=pixels();test.draw(expected,t);const after=pixels();let changed=0;
+  for(let i=0;i<before.length;i+=4)if([0,1,2,3].some(k=>Math.abs(before[i+k]-after[i+k])>12))changed++;
+  checks.push({moment:name,changedPixels:changed});
+ }
+ const sample=moments.find(v=>v.state.overlay?.kind==='arcade');
+ if(sample){
+  const scene=document.createElement('canvas');scene.width=1000;scene.height=920;const ctx=scene.getContext('2d',{willReadFrequently:true});
+  ctx.globalAlpha=0;drawScene(ctx,sample.state,0);const data=ctx.getImageData(0,0,1000,920).data;let visible=0;
+  for(let i=3;i<data.length;i+=4)if(data[i])visible++;
+  checks.push({moment:'Hidden parent layer',changedPixels:visible});
+ }
+ $('metrics').textContent=JSON.stringify(checks,null,2);$('status').textContent='Fades and layers checked';
 };
 function frame(t){
  const m=moments[index];if(!m){requestAnimationFrame(frame);return;}

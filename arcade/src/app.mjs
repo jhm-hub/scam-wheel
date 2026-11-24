@@ -370,10 +370,11 @@ async function runStep() {
       await wait(2700, token);
     } else if (e.kind === "candy") {
       state.overlay = { kind: "candy", entry: e, at: motionClock() };
-      soundFor("cash");
       state.status = SWEETS[e.color].name + " candy: +" + money(e.base) + ".";
       ui();
-      await wait(1600, token);
+      await wait(1200, token);
+      soundFor("cash");
+      await wait(1000, token);
       if (e.matched) {
         await dismissOverlay(token);
         state.overlay = { kind: "match", entry: e, at: motionClock() };

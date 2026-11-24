@@ -65,7 +65,9 @@ function drawScene(ctx, s, t) {
   }
   switch (mode) {
     case "baggage": {
-      const rows = Math.max(1,Math.ceil(d.weights.length / 4)), size = Math.min(64,152 / rows), gap = Math.min(60,size + 4);
+      const packedLayout = count => { const size=Math.min(64,152/Math.max(1,Math.ceil(count/4)));return {size,gap:Math.min(60,size+4)}; };
+      const oldLayout=packedLayout(before.weights.length),newLayout=packedLayout(d.weights.length),pack=phase(80,950);
+      const size=lerp(oldLayout.size,newLayout.size,pack),gap=lerp(oldLayout.gap,newLayout.gap,pack);
       for (let i=0;i<d.weights.length;i++) {
         const x=-96+i%4*64,y=75-Math.floor(i/4)*gap,newest=e&&i===d.weights.length-1;
         const q=newest?phase(160,1050):1,drop=newest?(1-q)*-155:0;
@@ -108,10 +110,11 @@ function drawScene(ctx, s, t) {
     case "stamps": {
       const stamp=phase(180,750),lineP=phase(750,1250);
       for(let i=0;i<9;i++) {
-        const x=-65+i%3*65,y=-65+Math.floor(i/3)*65,changed=e?.fx.index===i,marked=changed?stamp>0.65:d.marks[i]>0;
+        const x=-65+i%3*65,y=-65+Math.floor(i/3)*65,changed=e?.fx.index===i;
+        const value=changed?Math.round(lerp(before.marks[i],d.marks[i],phase(750,1000))):d.marks[i],marked=changed?(before.marks[i]>0||stamp===1):d.marks[i]>0;
         rect(x-27,y-27,55,55,marked?"#9571a1":"#e9d4c2",marked?gold:"#c8a9ba");
-        if(marked){sprite("stamp",x,y-6,39,i);rect(x-24,y+7,48,18,"#4c345d");text("$"+d.marks[i],x,y+16,16,cream,45);}else text(i+1,x,y,25,"#775271");
-        if(changed&&stamp<1){sprite("stamp",x,y-85*(1-stamp),55+14*(1-stamp),i,0,1-stamp*0.3);}
+        if(marked){sprite("stamp",x,y-6,39,i);rect(x-24,y+7,48,18,"#4c345d");text("$"+value,x,y+16,16,cream,45);}else text(i+1,x,y,25,"#775271");
+        if(changed&&stamp<1){sprite("stamp",x,y-6-85*(1-stamp),39+30*(1-stamp),i);}
       }
       const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8]];
       for(const i of d.lines){const q=before.lines.includes(i)?1:lineP,ends=[lines[i][0],lines[i][2]].map(v=>[-65+v%3*65,-65+Math.floor(v/3)*65]);ctx.save();ctx.globalAlpha*=0.7;line([ends[0],[lerp(ends[0][0],ends[1][0],q),lerp(ends[0][1],ends[1][1],q)]],gold,4);ctx.restore();}
@@ -216,6 +219,7 @@ function drawScene(ctx, s, t) {
         rect(x2 - 10, y2 - 22, 9, 9, "#b7d6b0");
       }
       let x=lerp(before.x,d.x,p),y=lerp(before.y,d.y,p);
+      ctx.save();
       if(e?.wrap&&!s.reduced){
         const [dx,dy]=[[0,-1],[1,0],[0,1],[-1,0]][e.fx.item.direction];
         const q=p<0.5?p*2:(p-0.5)*2;
@@ -223,21 +227,27 @@ function drawScene(ctx, s, t) {
         ctx.globalAlpha*=p<0.5?1-q:q;
       }
       sprite("compass",-64+x*64,-82+y*64-arc(p,8),32);
-      ctx.globalAlpha=1;
+      ctx.restore();
       text(d.detours + (d.detours === 1 ? " DETOUR" : " DETOURS"), 0, 130, 20, gold);
       break;
     }
     case "plinko": {
       for(let row=0;row<6;row++)for(let col=0;col<5;col++)circle(-96+col*48,-115+row*31,3,"#e7c9de");
-      const drop=s.reduced?1:clamp((age-180)/1750),path=d.path.length?d.path:[2,2,2,2,2,2,2],q=drop*6,segment=Math.min(5,Math.floor(q)),fract=q-segment;
-      const x=-96+lerp(path[segment],path[segment+1],smooth(fract))*48,y=lerp(-132,101,drop)-Math.sin(fract*Math.PI)*11;
+      const drop=s.reduced?1:clamp((age-180)/1680),path=d.path.length?d.path:[2,2,2,2,2,2,2],q=drop*6,segment=Math.min(5,Math.floor(q)),fract=q-segment;
+      const x=-96+lerp(path[segment],path[segment+1],smooth(fract))*48;
+      const y=lerp(-132,71,drop)-Math.sin(fract*Math.PI)*(segment===5?8:11),landed=phase(1860,1980);
       const factors=[1,3,8,3,1],lane=path[6];
       for(let col=0;col<5;col++){
-        rect(-118+col*48,88,44,26,d.path.length&&drop===1&&lane===col?"#be8c58":col===2?"#a27b48":"#75577f",d.path.length&&drop===1&&lane===col?cream:col===2?gold:"#d7b3d6");
+        rect(-118+col*48,88,44,26,col===2?"#a27b48":"#75577f",col===2?gold:"#d7b3d6");
+        if(d.path.length&&lane===col){ctx.save();ctx.globalAlpha*=landed;rect(-118+col*48,88,44,26,"#be8c58",cream);ctx.restore();}
         text("$"+s.round.prices.cash*factors[col],-96+col*48,101,17,cream,38);
       }
       if(!e){if(d.path.length)sprite("marble",-96+lane*48,71,28);else sprite("marble",0,-132,30);}
-      else sprite("marble",x,Math.min(y,71),28,0,Math.sin(drop*Math.PI)*Math.PI);
+      else {
+        const settle=clamp((age-1860)/190),squash=s.reduced?0:Math.sin(settle*Math.PI)*Math.exp(-settle*3)*0.18;
+        ctx.save();ctx.translate(x,y+14*squash);ctx.scale(1+squash,1-squash);
+        sprite("marble",0,0,28,0,Math.sin(drop*Math.PI)*Math.PI);ctx.restore();
+      }
       break;
     }
     case "encore": {
