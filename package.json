@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run && node scripts/build-arcade.mjs --engine && node --test arcade/checks/game.mjs",
+    "test": "vitest run && node scripts/build-arcade.mjs --engine && node --test arcade/checks/game.mjs twists/checks/*.test.mjs",
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --watch --serve"
   },

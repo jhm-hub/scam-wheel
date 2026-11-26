@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#20172c"><meta name="description" content="Eight playful wheel twists for Faith. Watch a guided preview or play a random round."><title>Faith's Scam Wheel - Eight New Twists</title><style>__CSS__</style></head>
+<body>
+<main class="app">
+  <section class="stage" aria-label="Wheel and game animation">
+    <div class="stage-top"><a href="../../" class="brand"><span class="brand-spark" aria-hidden="true">*</span> FAITH'S ARCADE</a><span id="preview-label" class="badge">GUIDED PREVIEW</span></div>
+    <canvas id="game" aria-label="Scam Wheel. Choose a game, then press Spin."></canvas>
+    <div class="stage-caption" aria-live="polite"><span id="result-eyebrow">YOUR NEXT LITTLE PROBLEM</span><strong id="result-headline">Bargain Bin</strong><span id="result-detail">Choose a game and press Spin.</span></div>
+  </section>
+  <aside class="desk" aria-label="Private controls">
+    <header><span class="eyebrow">EIGHT WHEEL TRAPS</span><h1>Scam Wheel</h1><p class="intro">It looked like a good spin.</p></header>
+    <label class="field" for="mode">Choose a scam<select id="mode"></select></label>
+    <p id="hook" class="hook"></p>
+    <div class="play-style" role="group" aria-label="How to play"><button id="guided" aria-pressed="true">Guided demo</button><button id="random" aria-pressed="false">Random play</button></div>
+    <label class="field" id="scenario-field" for="scenario">Example<select id="scenario"><option value="story">The reveal</option><option value="gentle">Gentle outcome</option><option value="big">Expensive outcome</option></select></label>
+    <label class="check"><input id="quick" type="checkbox" checked> Start at the scam</label>
+    <div class="action-block"><button id="spin" class="spin" disabled>Loading wheel...</button><div class="sub-actions"><button id="auto">Play this demo</button><button id="tour">Show all eight</button></div><p id="turn" class="turn" aria-live="polite">Ready when you are.</p></div>
+    <div class="private-totals"><div><span>Opening spins</span><strong id="opening">$0</strong></div><div><span id="quote-label">Scam quote</span><strong id="quote">$0</strong></div><div class="total"><span>Round total</span><strong id="total">$0</strong></div></div>
+    <div class="utility"><button id="reset">Reset round</button><button id="next">Next game</button><button id="sound" aria-pressed="true">Sound on</button></div>
+    <details class="drawer" open><summary>How this scam works</summary><p id="rule"></p><p id="finish-rule" class="muted"></p><ol id="ledger" class="ledger"></ol></details>
+    <details class="drawer"><summary>Amounts and appearance</summary><div id="money-fields" class="settings-fields"></div><label class="field" for="opening-values">Opening wheel amounts<input id="opening-values" inputmode="decimal" autocomplete="off"></label><button id="apply-settings">Apply amounts</button><p id="settings-status" role="status"></p><label class="field" for="pace">Spin duration <span id="pace-value">5.8 seconds</span><input id="pace" type="range" min="3" max="9" step="0.2" value="5.8"></label><label class="field" for="volume">Sound volume<input id="volume" type="range" min="0" max="100" value="35"></label><div class="colors"><label class="field">Pink<input id="pink" type="color" value="#e599bd"></label><label class="field">Lilac<input id="lilac" type="color" value="#bba6e4"></label></div><div class="sub-actions"><button id="save-settings">Save settings</button><button id="load-settings">Load settings</button></div><input id="settings-file" type="file" accept="application/json,.json" hidden><p class="muted" id="save-note">Settings stay in this browser.</p></details>
+    <details class="drawer"><summary>Stream view and chat</summary><p class="muted">Keep this control desk private. Use the clean view for your stream.</p><div class="sub-actions"><button id="open-view">Open clean view</button><button id="copy-view">Copy OBS link</button></div><label class="check"><input id="show-bill" type="checkbox" checked> Show final bill on the stream</label><p id="connection-status" class="muted" role="status"></p><label class="field" for="channel">Twitch channel<input id="channel" placeholder="Channel name" autocomplete="off" spellcheck="false"></label><label class="check"><input id="allow-mods" type="checkbox"> Let moderators use commands</label><button id="connect-chat">Connect chat</button><p id="chat-status" class="muted" role="status">Commands: !scam, !scam next, !scam reset.</p><p class="muted">Keep this desk open. Sound plays here; capture its audio in your stream setup.</p></details>
+    <footer><a href="../arcade/">Previous 20-game collection</a><span id="notice" role="status"></span></footer>
+  </aside>
+</main>
+<div id="viewer-status" role="status" hidden>Waiting for the private control desk...</div>
+<dialog id="confirm"><form method="dialog"><h2 id="confirm-title">Reset this round?</h2><p id="confirm-detail">The current round will be cleared.</p><div class="sub-actions"><button value="cancel">Keep playing</button><button value="confirm" class="danger">Reset round</button></div></form></dialog>
+<script>__APP__</script>
+</body></html>
